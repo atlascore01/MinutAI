@@ -132,8 +132,8 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
 
     // Save to DB
     const insertMeeting = `
-      INSERT INTO meetings (user_id, title, email_subject, date, participants, area, business_unit, client, objective, summary, topics, agreements, decisions, risks, raw_text, style)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      INSERT INTO meetings (user_id, title, email_subject, date, participants, area, business_unit, client, objective, summary, topics, agreements, decisions, risks, custom_notes, raw_text, style)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING id;
     `;
     const meetingValues = [
@@ -142,7 +142,7 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
       aiResult.email_subject || '',
       aiResult.date || 'No especificada',
       aiResult.participants || 'No especificados',
-      aiResult.area || null,
+      req.user ? req.user.area : (aiResult.area || null),
       aiResult.business_unit || null,
       aiResult.client || null,
       aiResult.objective || null,
@@ -151,6 +151,7 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
       JSON.stringify(aiResult.agreements || []),
       JSON.stringify(aiResult.decisions || []),
       JSON.stringify(aiResult.risks || []),
+      aiResult.custom_notes || null,
       content,
       style
     ];

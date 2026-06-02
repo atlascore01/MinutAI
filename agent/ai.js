@@ -34,7 +34,8 @@ Tu respuesta DEBE ser estrictamente un objeto JSON con la siguiente estructura (
       "due_date": "Fecha",
       "priority": "Alta | Media | Baja"
     }
-  ]
+  ],
+  "custom_notes": "Cualquier mensaje, solicitud especial o texto que el usuario haya pedido añadir al final de la minuta en las NOTAS ADICIONALES. Si no hay peticiones extra, déjalo vacío."
 }
 `;
 

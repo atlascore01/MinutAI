@@ -32,6 +32,21 @@ export default function MeetingPage() {
       });
   }, [id]);
 
+  const getAreaColor = (area) => {
+    switch (area) {
+      case 'T&C': return '#043942';
+      case 'DEV': return '#27ED7A';
+      case 'SEC': return '#0088FF';
+      case 'BS': return '#AD23F0';
+      case 'IT': return '#C3ED05';
+      default: return '#3b82f6';
+    }
+  };
+  
+  const getTextColor = (area) => {
+    return (area === 'DEV' || area === 'IT') ? '#111' : '#fff';
+  };
+
   const handleAction = (type) => {
     if (user?.area === 'IT' || meeting?.style === 'Estilo Algeiba IT') {
       setActionType(type);
@@ -43,6 +58,9 @@ export default function MeetingPage() {
   };
 
   const getItStyleHTML = (name, isPdf = false) => {
+    const areaColor = getAreaColor(meeting?.area);
+    const areaTextColor = getTextColor(meeting?.area);
+
     return `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
         <style>
@@ -55,7 +73,7 @@ export default function MeetingPage() {
           <strong>Nota:</strong> Por favor siéntanse libre de agregar / modificar cualquier punto en pos de estar 100% sincronizados.
         </div>
 
-        <div style="background-color: #4CAF50; color: white; padding: 5px 10px; margin-bottom: 10px;">
+        <div style="background-color: ${areaColor}; color: ${areaTextColor}; padding: 5px 10px; margin-bottom: 10px;">
           <strong>Participantes</strong>
         </div>
         <ul style="list-style-type: none; padding-left: 20px;">
@@ -63,14 +81,14 @@ export default function MeetingPage() {
           <li><strong>${meeting.participants}</strong></li>
         </ul>
 
-        <div style="background-color: #4CAF50; color: white; padding: 5px 10px; margin: 20px 0 10px 0;">
+        <div style="background-color: ${areaColor}; color: ${areaTextColor}; padding: 5px 10px; margin: 20px 0 10px 0;">
           <strong>Temas tratados</strong>
         </div>
         <ul>
           ${meeting.topics ? meeting.topics.map(t => `<li style="margin-bottom: 8px;">${t}</li>`).join('') : '<li>No hay temas específicos.</li>'}
         </ul>
 
-        <div style="background-color: #4CAF50; color: white; padding: 5px 10px; margin: 20px 0 10px 0;">
+        <div style="background-color: ${areaColor}; color: ${areaTextColor}; padding: 5px 10px; margin: 20px 0 10px 0;">
           <strong>Próximos accionables</strong>
         </div>
         <ul style="list-style-type: none; padding-left: 0;">
@@ -85,27 +103,34 @@ export default function MeetingPage() {
           `).join('') : '<li>No hay próximos pasos registrados.</li>'}
         </ul>
 
+        ${meeting.custom_notes ? `
+        <div style="background-color: ${areaColor}; color: ${areaTextColor}; padding: 5px 10px; margin: 20px 0 10px 0;">
+          <strong>Notas y Comentarios Extra</strong>
+        </div>
+        <p>${meeting.custom_notes.replace(/\n/g, '<br/>')}</p>
+        ` : ''}
+
         <p style="margin-top: 30px;">Desde ya quedamos atentos y agradecidos del feedback que nos puedan dar al respecto. Ante cualquier consulta o comentario, estamos a disposición.</p>
 
+        ${isPdf ? `
         <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; display: flex; align-items: center; gap: 20px;">
-          ${isPdf ? `
           <div>
             <img src="${typeof window !== 'undefined' ? window.location.origin : ''}/logo-it.png" alt="Ait Logo" style="height: 60px; display: block;" crossorigin="anonymous" />
           </div>
-          ` : ''}
-          <div style="border-left: ${isPdf ? '2px solid #ccc' : 'none'}; padding-left: ${isPdf ? '20px' : '0'};">
+          <div style="border-left: 2px solid #ccc; padding-left: 20px;">
             <p style="margin: 0; font-weight: bold; font-size: 16px;">${name}</p>
-            <p style="margin: 2px 0; font-size: 14px; color: #666;">Infrastructure & Operations Specialist | Algeiba | <a href="http://www.algeiba.com" style="color: #4CAF50; text-decoration: none;">www.algeiba.com</a></p>
+            <p style="margin: 2px 0; font-size: 14px; color: #666;">Infrastructure & Operations Specialist | Algeiba | <a href="http://www.algeiba.com" style="color: ${areaColor}; text-decoration: none;">www.algeiba.com</a></p>
             <p style="margin: 2px 0; font-size: 12px; color: #666;">Phone: +54 11 39885519</p>
             <p style="margin: 2px 0; font-size: 12px; color: #666;">Address: Paraná 771. 2nd Floor. (C1017AAO). Buenos Aires. Argentina</p>
           </div>
         </div>
+        ` : ''}
       </div>
     `;
   };
 
   const getStandardText = () => {
-    return `
+    let baseText = `
 Asunto sugerido: ${meeting.email_subject || meeting.title}
 
 Estimados,
@@ -116,16 +141,19 @@ Comparto la minuta correspondiente a la reunión realizada el día ${meeting.dat
 ${meeting.summary}
 
 **Temas Tratados:**
-${meeting.topics ? meeting.topics.map(t => '- ' + t).join('\\n') : ''}
+${meeting.topics ? meeting.topics.map(t => '- ' + t).join('\n') : ''}
 
 **Decisiones:**
-${meeting.decisions ? meeting.decisions.map(d => '- ' + d).join('\\n') : ''}
+${meeting.decisions ? meeting.decisions.map(d => '- ' + d).join('\n') : ''}
 
 **Próximos Pasos:**
-${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp: ' + a.owner + ', Fecha: ' + a.due_date + ')').join('\\n') : ''}
-
-Saludos.
+${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp: ' + a.owner + ', Fecha: ' + a.due_date + ')').join('\n') : ''}
 `;
+    if (meeting.custom_notes) {
+      baseText += `\n**Notas y Comentarios Extra:**\n${meeting.custom_notes}\n`;
+    }
+    baseText += `\nSaludos.\n`;
+    return baseText;
   }
 
   const executeCopy = () => {
@@ -189,13 +217,15 @@ Saludos.
   if (loading) return <div style={{ textAlign: 'center', padding: '4rem' }}>Cargando minuta...</div>;
   if (!meeting || meeting.error) return <div style={{ textAlign: 'center', padding: '4rem' }}>Minuta no encontrada</div>;
 
+  const areaColor = getAreaColor(meeting.area);
+
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
       
       {/* Header Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <div>
-          <span className="badge" style={{ marginBottom: '1rem', background: 'rgba(59, 130, 246, 0.2)', color: 'var(--accent-color)' }}>
+          <span className="badge" style={{ marginBottom: '1rem', background: 'rgba(255,255,255,0.1)', color: areaColor }}>
             Estilo: {meeting.style}
           </span>
         </div>
@@ -204,7 +234,7 @@ Saludos.
             {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
             {copied ? '¡Copiado!' : 'Copiar para Correo'}
           </button>
-          <button onClick={() => handleAction('pdf')} className="btn btn-primary">
+          <button onClick={() => handleAction('pdf')} className="btn btn-primary" style={{ backgroundColor: areaColor, color: getTextColor(meeting.area) }}>
             <Download size={18} /> Descargar PDF
           </button>
         </div>
@@ -228,7 +258,7 @@ Saludos.
               />
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowNameModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">Continuar</button>
+                <button type="submit" className="btn btn-primary" style={{ backgroundColor: areaColor, color: getTextColor(meeting.area) }}>Continuar</button>
               </div>
             </form>
           </div>
@@ -249,14 +279,14 @@ Saludos.
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem', padding: '1.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Calendar color="var(--accent-color)" />
+            <Calendar color={areaColor} />
             <div>
               <p style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Fecha</p>
               <p style={{ color: 'white', fontWeight: '500' }}>{meeting.date}</p>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Users color="var(--accent-color)" />
+            <Users color={areaColor} />
             <div>
               <p style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Participantes</p>
               <p style={{ color: 'white', fontWeight: '500' }}>{meeting.participants}</p>
@@ -264,7 +294,7 @@ Saludos.
           </div>
           {(meeting.area || meeting.business_unit) && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <Briefcase color="var(--accent-color)" />
+              <Briefcase color={areaColor} />
               <div>
                 <p style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Área / Unidad</p>
                 <p style={{ color: 'white', fontWeight: '500' }}>{meeting.area} {meeting.business_unit ? `| ${meeting.business_unit}` : ''}</p>
@@ -273,7 +303,7 @@ Saludos.
           )}
           {meeting.client && meeting.client !== 'No especificado en la reunión.' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <MapPin color="var(--accent-color)" />
+              <MapPin color={areaColor} />
               <div>
                 <p style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Cliente</p>
                 <p style={{ color: 'white', fontWeight: '500' }}>{meeting.client}</p>
@@ -284,7 +314,7 @@ Saludos.
 
         {/* Resumen Ejecutivo */}
         <div style={{ marginBottom: '3rem' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-color)' }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: areaColor }}>
             <Target size={24} /> Resumen Ejecutivo
           </h2>
           <p style={{ fontSize: '1.1rem', color: '#e2e8f0', lineHeight: '1.8' }}>
@@ -298,7 +328,7 @@ Saludos.
           {meeting.topics && meeting.topics.length > 0 && (
             <div>
               <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '1.2rem' }}>
-                <BookOpen size={20} color="var(--accent-color)" /> Temas Tratados
+                <BookOpen size={20} color={areaColor} /> Temas Tratados
               </h3>
               <ul style={{ listStylePosition: 'inside', color: 'var(--text-secondary)' }}>
                 {meeting.topics.map((t, i) => (
@@ -312,7 +342,7 @@ Saludos.
           {meeting.decisions && meeting.decisions.length > 0 && (
             <div>
               <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '1.2rem' }}>
-                <CheckCircle size={20} color="var(--success)" /> Decisiones Tomadas
+                <CheckCircle size={20} color={areaColor} /> Decisiones Tomadas
               </h3>
               <ul style={{ listStylePosition: 'inside', color: 'var(--text-secondary)' }}>
                 {meeting.decisions.map((d, i) => (
@@ -339,6 +369,18 @@ Saludos.
         )}
 
       </div>
+
+      {/* Notas y Comentarios Extra */}
+      {meeting.custom_notes && (
+        <div style={{ marginTop: '2rem', marginBottom: '2rem', padding: '1.5rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px' }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '1.2rem', color: areaColor }}>
+            <BookOpen size={20} /> Notas y Comentarios Extra
+          </h3>
+          <p style={{ color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
+            {meeting.custom_notes}
+          </p>
+        </div>
+      )}
 
       {/* Action Items Table */}
       {meeting.action_items && meeting.action_items.length > 0 && (

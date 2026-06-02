@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS meetings (
     agreements JSONB,
     decisions JSONB,
     risks JSONB,
+    custom_notes TEXT,
     raw_text TEXT,
     style VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
