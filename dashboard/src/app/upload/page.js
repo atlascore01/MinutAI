@@ -63,7 +63,7 @@ export default function UploadPage() {
       if (!res.ok) throw new Error('Error al procesar');
 
       const data = await res.json();
-      router.push(\`/meeting/\${data.id}\`);
+      router.push(`/meeting/${data.id}`);
     } catch (error) {
       console.error(error);
       alert('Hubo un error procesando la minuta. Revisa la consola.');
@@ -104,7 +104,7 @@ export default function UploadPage() {
             
             {/* Opción 1: Archivo */}
             <div 
-              className={\`upload-area \${dragActive ? 'drag-active' : ''}\`}
+              className={`upload-area ${dragActive ? 'drag-active' : ''}`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}

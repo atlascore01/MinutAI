@@ -50,7 +50,7 @@ export default function Home() {
       ) : (
         <div className="minutas-grid">
           {minutes.map((m) => (
-            <Link href={\`/meeting/\${m.id}\`} key={m.id} className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%', textDecoration: 'none' }}>
+            <Link href={`/meeting/${m.id}`} key={m.id} className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%', textDecoration: 'none' }}>
               <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: '#fff' }}>{m.title}</h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                 <Calendar size={16} />

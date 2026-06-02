@@ -27,25 +27,25 @@ export default function MeetingPage() {
   const copyToClipboard = () => {
     if (!meeting) return;
     
-    const emailContent = \`
+    const emailContent = `
 Estimados,
 
-Comparto la minuta correspondiente a la reunión realizada el día \${meeting.date}.
+Comparto la minuta correspondiente a la reunión realizada el día ${meeting.date}.
 
 **Resumen:**
-\${meeting.summary}
+${meeting.summary}
 
 **Temas Tratados:**
-\${meeting.topics ? meeting.topics.map(t => '- ' + t).join('\\n') : ''}
+${meeting.topics ? meeting.topics.map(t => '- ' + t).join('\\n') : ''}
 
 **Decisiones:**
-\${meeting.decisions ? meeting.decisions.map(d => '- ' + d).join('\\n') : ''}
+${meeting.decisions ? meeting.decisions.map(d => '- ' + d).join('\\n') : ''}
 
 **Próximos Pasos:**
-\${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp: ' + a.owner + ', Fecha: ' + a.due_date + ')').join('\\n') : ''}
+${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp: ' + a.owner + ', Fecha: ' + a.due_date + ')').join('\\n') : ''}
 
 Saludos.
-\`;
+`;
     navigator.clipboard.writeText(emailContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
@@ -98,7 +98,7 @@ Saludos.
               <Briefcase color="var(--accent-color)" />
               <div>
                 <p style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Área / Unidad</p>
-                <p style={{ color: 'white', fontWeight: '500' }}>{meeting.area} {meeting.business_unit ? \`| \${meeting.business_unit}\` : ''}</p>
+                <p style={{ color: 'white', fontWeight: '500' }}>{meeting.area} {meeting.business_unit ? `| ${meeting.business_unit}` : ''}</p>
               </div>
             </div>
           )}
@@ -192,7 +192,7 @@ Saludos.
                     <td>{item.owner}</td>
                     <td>{item.due_date}</td>
                     <td>
-                      <span className={\`badge \${item.priority?.toLowerCase() === 'alta' ? 'high' : item.priority?.toLowerCase() === 'media' ? 'medium' : 'low'}\`}>
+                      <span className={`badge ${item.priority?.toLowerCase() === 'alta' ? 'high' : item.priority?.toLowerCase() === 'media' ? 'medium' : 'low'}`}>
                         {item.priority || 'Normal'}
                       </span>
                     </td>
