@@ -73,7 +73,7 @@ ${content}
     return JSON.parse(responseText);
   } catch (error) {
     console.error('Error in Groq LLM:', error);
-    throw new Error('Failed to process meeting content');
+    throw new Error('Groq LLM Error: ' + error.message);
   }
 }
 

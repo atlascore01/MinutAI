@@ -52,14 +52,14 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
       RETURNING id;
     `;
     const meetingValues = [
-      aiResult.title,
-      aiResult.date,
-      aiResult.participants,
-      aiResult.area,
-      aiResult.business_unit,
-      aiResult.client,
-      aiResult.objective,
-      aiResult.summary,
+      aiResult.title || 'Sin título',
+      aiResult.date || 'No especificada',
+      aiResult.participants || 'No especificados',
+      aiResult.area || null,
+      aiResult.business_unit || null,
+      aiResult.client || null,
+      aiResult.objective || null,
+      aiResult.summary || '',
       JSON.stringify(aiResult.topics || []),
       JSON.stringify(aiResult.agreements || []),
       JSON.stringify(aiResult.decisions || []),
@@ -78,7 +78,7 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
           INSERT INTO action_items (meeting_id, action, owner, due_date, priority)
           VALUES ($1, $2, $3, $4, $5)
         `;
-        await db.query(insertAction, [meetingId, item.action, item.owner, item.due_date, item.priority]);
+        await db.query(insertAction, [meetingId, item.action || 'Acción sin definir', item.owner || 'No asignado', item.due_date || 'Sin fecha', item.priority || 'Normal']);
       }
     }
 
@@ -86,7 +86,7 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Server Error: ' + error.message });
   }
 });
 
@@ -96,7 +96,7 @@ app.get('/api/minutes', async (req, res) => {
     res.json(rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Server Error: ' + error.message });
   }
 });
 
@@ -115,7 +115,7 @@ app.get('/api/minutes/:id', async (req, res) => {
     res.json(meeting);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Server Error: ' + error.message });
   }
 });
 
@@ -127,7 +127,7 @@ app.put('/api/minutes/:id', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Server Error: ' + error.message });
   }
 });
 
