@@ -128,7 +128,7 @@ export default function AdminPage() {
                 <option value="T&C">T&C</option>
                 <option value="SEC">SEC</option>
                 <option value="DEV">DEV</option>
-                <option value="DATA">DATA</option>
+                <option value="BS">BS</option>
               </select>
             </div>
             <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Crear Usuario</button>

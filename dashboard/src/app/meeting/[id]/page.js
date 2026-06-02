@@ -48,11 +48,14 @@ export default function MeetingPage() {
   };
 
   const handleAction = (type) => {
-    if (user?.area === 'IT' || meeting?.style === 'Estilo Algeiba IT') {
+    if (type === 'copy') {
+      executeCopy();
+      return;
+    }
+    if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba IT')) {
       setActionType(type);
       setShowNameModal(true);
     } else {
-      if (type === 'copy') executeCopy();
       if (type === 'pdf') executePdf();
     }
   };
@@ -160,8 +163,8 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
     if (!meeting) return;
     
     let emailContent = '';
-    if (user?.area === 'IT' || meeting?.style === 'Estilo Algeiba IT') {
-      const html = getItStyleHTML(itName, false);
+    if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba IT')) {
+      const html = getItStyleHTML('', false);
       
       const blobHtml = new Blob([html], { type: 'text/html' });
       const blobText = new Blob([getStandardText()], { type: 'text/plain' });
@@ -195,7 +198,7 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
-      if (user?.area === 'IT' || meeting?.style === 'Estilo Algeiba IT') {
+      if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba IT')) {
         element = document.createElement('div');
         element.innerHTML = getItStyleHTML(itName, true);
       } else {
