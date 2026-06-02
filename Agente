@@ -1,0 +1,101 @@
+# 🤖 Configuración del Agente AI (DocChat)
+
+Esta guía detalla la configuración técnica del agente para que puedas replicar su lógica, prompts y dependencias en otro sistema o plataforma.
+
+## 1. Stack Tecnológico (Modelos Utilizados)
+
+El agente utiliza un enfoque híbrido combinando dos APIs distintas para diferentes etapas del RAG (Retrieval-Augmented Generation):
+
+1. **Embeddings (Búsqueda Semántica):**
+   - **Modelo:** `models/gemini-embedding-001` (Google Gemini)
+   - **Dimensionalidad:** 768
+   - **Uso:** Transforma tanto los textos de los documentos almacenados como la consulta (query) del usuario en vectores para buscar los fragmentos de texto más relevantes dentro de la base de datos (PostgreSQL con pgvector).
+   - *Nota de uso:* Los textos se truncan a 8000 caracteres antes del embedding por límites de token de la API de Gemini.
+
+2. **Generación de Respuestas y Razonamiento (LLM Core):**
+   - **Modelo:** `llama-3.3-70b-versatile` (A través del proveedor **Groq**).
+   - **Ventaja de Groq:** Permite una velocidad de inferencia extrema (tokens por segundo) ideal para chats fluidos (SSE - Server Sent Events).
+   - **Librería SDK:** `groq-sdk`
+
+---
+
+## 2. Prompts de Sistema (System Prompts)
+
+El comportamiento del agente se rige por un Prompt del Sistema (System Prompt) que cambia dinámicamente según si existen documentos en el contexto o no.
+
+### Modo RAG (Con documentos en contexto)
+Cuando el motor de búsqueda encuentra fragmentos relevantes (chunks), se inyecta este prompt:
+```text
+Eres un asistente inteligente. Tenés acceso a fragmentos de documentos del usuario.
+
+Reglas:
+- Respondé principalmente usando los fragmentos proporcionados.
+- Si la respuesta está en los fragmentos, citá el documento y la página si está disponible.
+- Si la pregunta es general o no tiene que ver con los documentos, respondé igual con tu conocimiento.
+- Respondé siempre en el mismo idioma que la pregunta del usuario.
+- Sé conciso pero completo.
+```
+
+### Modo Libre (Sin documentos o charla casual)
+```text
+Eres un asistente inteligente y conversacional.
+Respondé siempre en el mismo idioma que el usuario. Sé conciso pero completo.
+```
+
+---
+
+## 3. Arquitectura del Contexto Inyectado (User Prompt)
+
+Cuando un usuario hace una pregunta, no enviamos únicamente la pregunta al modelo, sino un bloque ensamblado (`buildUserContent`) con:
+
+1. **Los fragmentos de texto recuperados de la DB (Chunks).**
+2. **La metadata (Nombre del archivo, Número de página).**
+3. **La pregunta original.**
+
+**Ejemplo de inyección:**
+```text
+FRAGMENTOS RELEVANTES DE LOS DOCUMENTOS:
+
+[Fragmento 1 — Manual_Usuario.pdf (página 4)]
+"Para encender el sistema debes presionar..."
+
+[Fragmento 2 — Especificaciones.txt]
+"El sistema requiere 220v..."
+
+---
+
+Pregunta: ¿Cómo se enciende?
+```
+
+---
+
+## 4. Guía Activa del Progreso (Contexto del Alumno)
+
+Para que el agente funcione como un "Tutor Guía", se le inyecta dinámicamente al **System Prompt** el estado de lectura y progreso del usuario en la plataforma. Antes de enviar la petición al LLM, la API del Backend lee de la base de datos (`user_progress` y `user_folder_progress`) y adjunta el siguiente texto:
+
+```text
+[CONTEXTO DE PROGRESO DEL ALUMNO]
+Eres un tutor guía. Tienes acceso al estado de lectura del alumno. Si el alumno te pregunta por dónde va, qué tiene que hacer a continuación o se muestra perdido, usa esta información para guiarle.
+- Documentos leídos: [Lista dinámica de archivos leídos]
+- Documentos pendientes por leer: [Lista dinámica de archivos bloqueados o pendientes]
+- Carpetas que requieren Cuestionario para avanzar: [Lista dinámica de carpetas y su estado (Aprobado: Sí/No)]
+
+Recuerda ser empático y claro al decirle al alumno qué documento exacto debe leer a continuación (típicamente el primer documento pendiente).
+```
+*Si el usuario pregunta "¿Qué tengo que leer ahora?", el LLM usa esta variable inyectada para responder con exactitud.*
+
+---
+
+## 5. Parámetros de Inferencia del LLM
+
+Cuando se instancía el cliente de Groq (Llama 3), se configuran los siguientes parámetros:
+- **Temperature:** `0.5` (Un balance ideal entre respuestas creativas y ceñidas a la realidad del texto. Para tareas estrictas de corrección se usa `0.2`).
+- **Max Tokens:** `1024` (Límite de longitud de respuesta).
+- **Stream:** `true` (Habilita SSE para enviar palabras al frontend a medida que se generan, sin hacer esperar al usuario).
+
+## 6. Generación de Metadatos por AI
+
+Además del Chatbot, el agente realiza tareas en background usando prompts con estructuras JSON estrictas (Temperatura `0.2` para evitar alucinaciones):
+- **Cuestionarios Automáticos:** Pide generar exactamente 3 preguntas con formato JSON estricto: `[{"question": "", "options": [], "correct": "", "explanation": ""}]`.
+- **Generador de Títulos:** Resume la primera interacción del chat en menos de 4 palabras para titular la conversación en la barra lateral.
+- **Sugeridor de Orden Pedagógico:** Recibe la lista de documentos y le devuelve a la UI un array de IDs recomendando el orden óptimo de lectura.

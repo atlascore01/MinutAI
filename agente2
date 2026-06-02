@@ -1,0 +1,165 @@
+# Arquitectura y Estructura del Agente Conversacional (AIWorker - EDY)
+
+Este documento detalla la arquitectura técnica, el flujo de datos y la estructura del sistema del agente conversacional **EDY**, diseñado para interactuar mediante WhatsApp y servir como asistente administrativo en un panel de control. El objetivo es proporcionar una guía clara para replicar este sistema en otros proyectos.
+
+---
+
+## 1. Tecnologías y Proveedores
+
+La infraestructura del agente está compuesta por las siguientes tecnologías:
+
+*   **Entorno de Ejecución:** Node.js.
+*   **Servidor HTTP y API:** Servidor HTTP nativo de Node.js (con routing manual) y soporte para Server-Sent Events (SSE).
+*   **Base de Datos:** PostgreSQL (usando la biblioteca `pg` de Node.js) para almacenamiento persistente.
+*   **Conectividad de Mensajería:** `@whiskeysockets/baileys` para la integración directa con la API de WhatsApp Web.
+*   **Procesamiento de Lenguaje Natural (Texto):** Groq SDK con el modelo `llama-3.3-70b-versatile`.
+*   **Transmisión de Voz (Audio a Texto):** Groq SDK con el modelo `whisper-large-v3-turbo`.
+*   **Visión Computacional (Imagen a Texto):** Google Generative AI SDK con el modelo `gemini-1.5-flash`.
+*   **Automatización Temporal:** `node-cron` para tareas periódicas en segundo plano (seguimiento/recontacto).
+
+---
+
+## 2. Diagrama de Arquitectura y Flujo de Datos
+
+El siguiente diagrama ilustra cómo fluyen los mensajes entrantes (texto, imágenes o audio) y cómo interactúan las diferentes capas de la aplicación:
+
+```mermaid
+graph TD
+    %% Nodos
+    WA[WhatsApp Client] -->|Mensaje entrante: Texto/Audio/Imagen| Index[index.js - Baileys Gateway]
+    
+    Index -->|Verificación Blacklist/Whitelist| DB[(PostgreSQL)]
+    Index -->|Audio buffer| Whisper[Groq Whisper]
+    Whisper -->|Texto transcrito| Index
+    
+    Index -->|Imagen buffer + Texto| Gemini[Gemini 1.5 Flash]
+    Gemini -->|Descripción técnica + Respuesta útil| Index
+    
+    Index -->|Texto + Historial de chat| AI[ai.js - Motor del Agente]
+    AI -->|Consulta Catálogo y FAQs| DB
+    AI -->|Llamada al LLM| Groq[Groq Llama 3.3 70B]
+    Groq -->|Respuesta clasificada| AI
+    
+    AI -->|Clasificación y respuesta final| Index
+    
+    Index -->|Enviar mensaje de WhatsApp| WA
+    Index -->|Guardar historial de chat| DB
+    Index -->|Emisión de notificaciones SSE| Dash[Dashboard - Cliente SSE]
+    
+    Cron[Cron Scheduler - Cada 5 min] -->|Evaluar recontactos| DB
+    Cron -->|Generar mensaje de seguimiento| AI
+    
+    Admin[Asesor Humano] -->|Derivación con resumen de chat| WA
+```
+
+---
+
+## 3. Estructura de Módulos (Archivos Clave)
+
+El núcleo del agente se distribuye en cuatro archivos de código principales dentro del directorio `/src`:
+
+### A. [index.js](file:///c:/Users/Nicolas%20France/AIWorker/src/index.js)
+Es el punto de entrada de la aplicación. Se encarga de:
+*   Inicializar y mantener la conexión de WhatsApp a través de Baileys.
+*   Controlar los accesos mediante validación de listas blancas/negras guardadas en la base de datos.
+*   Capturar los mensajes entrantes, descargar archivos multimedia (audios e imágenes) y enrutarlos al flujo de IA adecuado.
+*   Guardar los mensajes en la base de datos y emitir respuestas físicas a los usuarios a través del socket de WhatsApp.
+*   Ejecutar el servidor HTTP que provee los endpoints para la API del Dashboard y las notificaciones en tiempo real vía SSE.
+*   Ejecutar el programador de tareas (`cron`) para la reactivación automática de clientes.
+
+### B. [ai.js](file:///c:/Users/Nicolas%20France/AIWorker/src/ai.js)
+Contiene la lógica de inteligencia artificial y enrutamiento conversacional:
+*   **Detección del tipo de agente:** Clasifica el mensaje del usuario mediante expresiones regulares en 5 categorías de atención (Generalista, Productos, Servicios, Cotización, Redirección).
+*   **Construcción dinámica del System Prompt:** Junta las instrucciones del agente con información de contexto en tiempo real obtenida de la base de datos (catálogo de productos, FAQs y descripción de la empresa).
+*   **Transcripción de audio:** Convierte notas de voz temporales en texto plano usando Whisper.
+*   **Procesamiento visual:** Envía imágenes a Gemini para análisis técnico rápido e integra la respuesta resultante en la conversación.
+*   **Generador de Resúmenes:** Sintetiza los chats anteriores cuando un cliente es derivado a un asesor humano.
+*   **Envío inteligente de catálogo:** Identifica si el cliente solicita ver un producto y valida si ya se le envió una imagen para no saturarlo, ordenando el envío de archivos adjuntos del catálogo si corresponde.
+
+### C. [db.js](file:///c:/Users/Nicolas%20France/AIWorker/src/db.js)
+Es la capa de abstracción de base de datos. Implementa consultas SQL para:
+*   Realizar migraciones automáticas al iniciar el sistema (crear y actualizar tablas).
+*   Registrar contactos, conversaciones y mensajes históricos de manera transaccional.
+*   Gestionar configuraciones del agente, catálogos de productos con imágenes serializadas en base64, registros de usuarios del panel, logs de actividad y agenda de turnos.
+*   Filtrar qué conversaciones cumplen con las condiciones para el envío del mensaje de recontacto (cron).
+
+### D. [alerts.js](file:///c:/Users/Nicolas%20France/AIWorker/src/alerts.js)
+Gestiona el sistema de alertas del administrador. Permite que el bot notifique de forma directa al número asignado sobre el estado de salud del sistema, desconexiones o errores importantes en el flujo.
+
+---
+
+## 4. Flujos Clave del Agente
+
+Para replicar el agente conversacional, es necesario implementar los siguientes 7 flujos de lógica:
+
+### 1. Clasificación Conversacional (Multi-Agente)
+En lugar de procesar todo bajo un único prompt genérico, el sistema utiliza expresiones regulares de alta velocidad en `detectAgentType` para clasificar la intención antes de contactar al LLM. Esto optimiza el consumo de tokens y asigna prompts altamente específicos:
+*   `generalista`: Saludos y orientación inicial.
+*   `servicios`: Explicación técnica de obras generales y cotizaciones sin cargo.
+*   `productos`: Información de stock, dimensiones estándar e invitación al showroom.
+*   `cotizacion`: Captura de datos estructurados (zona, tipo de trabajo, tiempos).
+*   `redireccion`: Solicitud directa de hablar con un humano.
+
+### 2. Procesamiento de Audios (Voz a Texto)
+1.  El módulo `index.js` detecta que el mensaje contiene `audioMessage` o `pttMessage`.
+2.  Descarga el buffer binario del mensaje.
+3.  `transcribeAudio` en `ai.js` escribe temporalmente el archivo de audio en el disco del sistema (`/tmp`).
+4.  Envía el archivo a la API de Groq Whisper y obtiene el texto.
+5.  El archivo temporal es eliminado inmediatamente de forma asíncrona.
+6.  El texto transcrito se reinyecta en la función principal `getAIReply` simulando un mensaje de texto tradicional.
+
+### 3. Procesamiento de Imágenes con Visión Artificial
+1.  El cliente envía una imagen por WhatsApp.
+2.  `index.js` descarga el buffer y lo pasa a `getAIReply`.
+3.  El sistema utiliza `gemini-1.5-flash` en un flujo de dos fases:
+    *   **Fase 1 (Para el asesor):** Describe técnicamente lo que se ve en la imagen (materiales, tipo de daño, estado de obra) en 2-3 líneas y lo guarda en base de datos.
+    *   **Fase 2 (Para el cliente):** El modelo utiliza el prompt del especialista en servicios junto a la imagen para responder de manera coherente al cliente sobre cómo el negocio puede ayudarle con ese caso específico.
+
+### 4. Automatización de Envío de Catálogo (Imágenes del Sistema)
+1.  El cliente solicita fotos de un producto determinado.
+2.  `findProductImage` busca palabras clave dentro de la base de datos de productos activos.
+3.  Si coincide un producto configurado con "puede enviar imagen":
+    *   El sistema recupera la imagen guardada en base64 de la base de datos.
+    *   Verifica en la tabla `conversations` (columna `images_sent`) si esa imagen en específico ya se envió en esa sesión para evitar spam.
+    *   Si no se ha enviado, envía un mensaje multimedia con la imagen adjunta y registra el envío en la base de datos.
+
+### 5. Derivación Humana / Handoff
+1.  El sistema detecta una intención de redirección (ej. "quiero hablar con un asesor").
+2.  `generateSummary` en `ai.js` toma los últimos 10 mensajes y genera un resumen conciso usando Llama 3.3.
+3.  El bot envía al cliente una respuesta de despedida con un enlace directo de WhatsApp (`https://wa.me/telefono_asesor`) que contiene un texto predefinido.
+4.  De forma paralela, el bot le envía un mensaje privado al número del asesor conteniendo:
+    *   Nombre del cliente y enlace directo a su chat.
+    *   Resumen automático generado de la conversación previa.
+    *   Descripción técnica de la imagen (si el cliente había enviado una previamente).
+    *   Reenvío físico de la imagen adjunta del cliente.
+
+### 6. Seguimiento Automático (Recontacto Cron)
+1.  Cada 5 minutos, `node-cron` consulta las conversaciones en base de datos.
+2.  Filtra aquellas cuyo último mensaje provenga del bot (`ai`), que hayan estado inactivas por más del tiempo configurado (ej. 60 minutos) y que no hayan recibido un mensaje de recontacto aún.
+3.  Utiliza el prompt especializado `recontacto` para generar un saludo breve, cálido y no invasivo que retome la conversación de forma personalizada según el historial del cliente.
+4.  Envía el mensaje de WhatsApp automáticamente y registra que el recontacto fue enviado.
+
+### 7. Asistente Interno del Dashboard (ADY como Ayuda de Sistema)
+1.  El frontend expone un widget de chat interno para los administradores.
+2.  Este widget se comunica con `/api/assistant`.
+3.  El sistema ejecuta un prompt especializado que provee al modelo un conocimiento completo sobre el funcionamiento interno de la plataforma:
+    *   Cómo solucionar problemas del código QR de WhatsApp.
+    *   Cómo gestionar los turnos de la agenda.
+    *   Cómo actualizar los productos del catálogo.
+    *   Cuándo escalar un problema de infraestructura técnica con los datos de contacto del desarrollador a cargo.
+
+---
+
+## 5. Lista de Pasos para Replicar el Agente en otro Proyecto
+
+Para migrar esta arquitectura a un nuevo codebase, siga este orden de implementación:
+
+1.  **Configurar Base de Datos:** Crear la estructura de tablas para contactos, conversaciones, mensajes, configuraciones de IA (`ai_settings`), catálogo de productos e imágenes del catálogo.
+2.  **Configurar la API del LLM:** Implementar un cliente de Groq (para texto y audio) y de Google Generative AI (para visión de imágenes).
+3.  **Integrar Gateway de Mensajería:** Configurar la conexión con Baileys (`@whiskeysockets/baileys`) para recibir mensajes de WhatsApp, sincronizar el estado de conexión (QR) y gestionar las credenciales de sesión en disco (`/auth_info`).
+4.  **Desarrollar el Enrutamiento Conversacional:** Copiar las reglas de detección de tipo de agente en base a regex y la lógica de prompt dinámico (unir base + catálogo + FAQs).
+5.  **Añadir Manejo Multimedia:** Implementar la descarga de buffers de audio e imágenes para enrutarlos a Whisper y Gemini respectivamente.
+6.  **Programar el Cron de Recontacto:** Establecer el planificador periódico que escanee las conversaciones inactivas en la base de datos y envíe notificaciones automatizadas.
+7.  **Exponer API del Dashboard:** Crear el servidor HTTP y configurar la autenticación basada en tokens de sesión y la transmisión SSE (`/api/notifications/stream`) para ver la actividad del agente en tiempo real.
+
+![alt text](image.png)
