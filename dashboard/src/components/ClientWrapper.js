@@ -22,6 +22,11 @@ function Navbar() {
             <Link href="/" className="btn btn-secondary">
               Historial
             </Link>
+            {user.role === 'ADMIN' && (
+              <Link href="/admin" className="btn btn-secondary" style={{ borderColor: 'var(--accent-color)', color: 'var(--accent-color)' }}>
+                Gestión
+              </Link>
+            )}
             <Link href="/upload" className="btn btn-primary">
               Nueva Minuta
             </Link>

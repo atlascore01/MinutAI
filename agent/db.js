@@ -11,6 +11,7 @@ async function initDB() {
         username VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         area VARCHAR(50) NOT NULL,
+        role VARCHAR(50) DEFAULT 'USER',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -42,6 +43,11 @@ async function initDB() {
         END;
         BEGIN
             ALTER TABLE meetings ADD COLUMN email_subject VARCHAR(255);
+        EXCEPTION
+            WHEN duplicate_column THEN null;
+        END;
+        BEGIN
+            ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'USER';
         EXCEPTION
             WHEN duplicate_column THEN null;
         END;

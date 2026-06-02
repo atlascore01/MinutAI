@@ -20,7 +20,24 @@ db.initDB();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'minutai_secret_key';
 
-app.post('/api/register', async (req, res) => {
+const authMiddleware = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (token) {
+    try {
+      req.user = jwt.verify(token, JWT_SECRET);
+    } catch (err) {}
+  }
+  next();
+};
+
+const adminMiddleware = (req, res, next) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Acceso denegado: Se requieren permisos de Administrador' });
+  }
+  next();
+};
+
+app.post('/api/register', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { username, password, area } = req.body;
     if (!username || !password || !area) {
@@ -50,25 +67,34 @@ app.post('/api/login', async (req, res) => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user.id, username: user.username, area: user.area }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user: { id: user.id, username: user.username, area: user.area } });
+    const token = jwt.sign({ id: user.id, username: user.username, area: user.area, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ token, user: { id: user.id, username: user.username, area: user.area, role: user.role } });
   } catch (error) {
     res.status(500).json({ error: 'Server Error: ' + error.message });
   }
 });
 
-const authMiddleware = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (token) {
-    try {
-      req.user = jwt.verify(token, JWT_SECRET);
-    } catch (err) {}
-  }
-  next();
-};
-
 app.use('/api/process', authMiddleware);
 app.use('/api/minutes', authMiddleware);
+
+app.get('/api/users', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT id, username, area, role, created_at FROM users ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Server Error: ' + error.message });
+  }
+});
+
+app.delete('/api/users/:id', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.query('DELETE FROM users WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Server Error: ' + error.message });
+  }
+});
 
 app.post('/api/process', upload.single('file'), async (req, res) => {
   try {

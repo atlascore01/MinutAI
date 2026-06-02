@@ -62,25 +62,35 @@ CONTENIDO:
 ${content}
 `;
 
-  try {
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.5-flash',
-      systemInstruction: SYSTEM_PROMPT,
-    });
+  const MAX_RETRIES = 3;
+  let delay = 2000;
 
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: 0.2
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const model = genAI.getGenerativeModel({ 
+        model: 'gemini-2.5-flash',
+        systemInstruction: SYSTEM_PROMPT,
+      });
+
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.2
+        }
+      });
+
+      const responseText = result.response.text();
+      return JSON.parse(responseText);
+    } catch (error) {
+      console.error(`Error in Gemini LLM (Attempt ${attempt}/${MAX_RETRIES}):`, error.message);
+      if (attempt === MAX_RETRIES) {
+        throw new Error('Gemini LLM Error: ' + error.message);
       }
-    });
-
-    const responseText = result.response.text();
-    return JSON.parse(responseText);
-  } catch (error) {
-    console.error('Error in Gemini LLM:', error);
-    throw new Error('Gemini LLM Error: ' + error.message);
+      // Wait before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, delay));
+      delay *= 2; // 2s, 4s, 8s...
+    }
   }
 }
 

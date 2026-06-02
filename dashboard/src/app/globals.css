@@ -74,7 +74,9 @@ p {
 
 .header {
   padding: 1.5rem 2rem;
+  background: rgba(15, 23, 42, 0.95);
   border-bottom: 1px solid var(--card-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   display: flex;
@@ -82,7 +84,7 @@ p {
   align-items: center;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 100;
 }
 
 .logo {
