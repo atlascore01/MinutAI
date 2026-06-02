@@ -47,6 +47,17 @@ export default function MeetingPage() {
     return (area === 'DEV' || area === 'IT') ? '#111' : '#fff';
   };
 
+  const getLogoFile = (area) => {
+    switch (area) {
+      case 'T&C': return '01_Atnc_negro.png';
+      case 'BS': return '03_Abs_color.png';
+      case 'DEV': return '03_Adev_color.png';
+      case 'SEC': return '03_Asec_color.png';
+      case 'IT': return 'logo-it.png';
+      default: return 'logo-it.png';
+    }
+  };
+
   const handleAction = (type) => {
     if (type === 'copy') {
       executeCopy();
@@ -118,11 +129,11 @@ export default function MeetingPage() {
         ${isPdf ? `
         <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; display: flex; align-items: center; gap: 20px;">
           <div>
-            <img src="${typeof window !== 'undefined' ? window.location.origin : ''}/logo-it.png" alt="Ait Logo" style="height: 60px; display: block;" crossorigin="anonymous" />
+            <img src="${typeof window !== 'undefined' ? window.location.origin : ''}/${getLogoFile(meeting?.area)}" alt="Algeiba Logo" style="height: 60px; display: block;" crossorigin="anonymous" />
           </div>
           <div style="border-left: 2px solid #ccc; padding-left: 20px;">
             <p style="margin: 0; font-weight: bold; font-size: 16px;">${name}</p>
-            <p style="margin: 2px 0; font-size: 14px; color: #666;">Infrastructure & Operations Specialist | Algeiba | <a href="http://www.algeiba.com" style="color: ${areaColor}; text-decoration: none;">www.algeiba.com</a></p>
+            <p style="margin: 2px 0; font-size: 14px; color: #666;">| Algeiba | <a href="http://www.algeiba.com" style="color: ${areaColor}; text-decoration: none;">www.algeiba.com</a></p>
             <p style="margin: 2px 0; font-size: 12px; color: #666;">Phone: +54 11 39885519</p>
             <p style="margin: 2px 0; font-size: 12px; color: #666;">Address: Paraná 771. 2nd Floor. (C1017AAO). Buenos Aires. Argentina</p>
           </div>
