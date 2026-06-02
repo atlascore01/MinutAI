@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, FileText, Settings, Sparkles, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -15,6 +15,12 @@ export default function UploadPage() {
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (user?.area) {
+      setStyle(user.area === 'T&C' ? 'Estilo Algeiba T&C' : 'Estilo Algeiba IT');
+    }
+  }, [user]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -108,7 +114,9 @@ export default function UploadPage() {
             value={style}
             onChange={(e) => setStyle(e.target.value)}
           >
-            <option value="Estilo Algeiba IT">Estilo Algeiba IT (Formato Corporativo {user?.area || 'IT'})</option>
+            <option value={user?.area === 'T&C' ? 'Estilo Algeiba T&C' : 'Estilo Algeiba IT'}>
+              {user?.area === 'T&C' ? 'Estilo Algeiba T&C' : 'Estilo Algeiba IT'} (Formato Corporativo {user?.area || 'IT'})
+            </option>
             <option value="Operativo Profesional">Operativo Profesional</option>
             <option value="Ejecutivo">Ejecutivo (Orientado a Gerencia)</option>
             <option value="Operativo">Operativo (Orientado a Equipos Técnicos)</option>
