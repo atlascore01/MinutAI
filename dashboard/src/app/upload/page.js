@@ -138,7 +138,7 @@ export default function UploadPage() {
                 type="file"
                 style={{ display: 'none' }}
                 onChange={handleChange}
-                accept=".txt,.pdf"
+                accept=".txt,.pdf,.docx"
               />
               <UploadCloud className="upload-icon" style={{ margin: '0 auto 1rem' }} />
               {file ? (
@@ -149,7 +149,7 @@ export default function UploadPage() {
               ) : (
                 <div>
                   <h4>Subir Archivo</h4>
-                  <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Arrastra y suelta tu archivo TXT o PDF aquí, o haz clic para buscar.</p>
+                  <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Arrastra y suelta tu archivo TXT, PDF o DOCX aquí, o haz clic para buscar.</p>
                 </div>
               )}
             </div>

@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const db = require('./db');
 const { processMeetingContent } = require('./ai');
 const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -109,8 +110,11 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
       } else if (req.file.mimetype === 'application/pdf') {
         const pdfData = await pdfParse(req.file.buffer);
         fileText = pdfData.text;
+      } else if (req.file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || req.file.originalname.endsWith('.docx')) {
+        const docData = await mammoth.extractRawText({ buffer: req.file.buffer });
+        fileText = docData.value;
       } else {
-        return res.status(400).json({ error: 'Formato no soportado. Sube un TXT o PDF.' });
+        return res.status(400).json({ error: 'Formato no soportado. Sube un TXT, PDF o DOCX.' });
       }
       
       content = fileText + (content ? '\n\n--- INGRESO MANUAL ADICIONAL ---\n\n' + content : '');
