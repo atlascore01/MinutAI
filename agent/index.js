@@ -4,6 +4,7 @@ const cors = require('cors');
 const multer = require('multer');
 const db = require('./db');
 const { processMeetingContent } = require('./ai');
+const pdfParse = require('pdf-parse');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -24,9 +25,11 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
     if (req.file) {
       if (req.file.mimetype === 'text/plain') {
         content = req.file.buffer.toString('utf-8');
+      } else if (req.file.mimetype === 'application/pdf') {
+        const pdfData = await pdfParse(req.file.buffer);
+        content = pdfData.text;
       } else {
-        // Here we could implement PDF or Audio extraction using Gemini or Whisper
-        return res.status(400).json({ error: 'For now only text/plain is supported via file.' });
+        return res.status(400).json({ error: 'Formato no soportado. Sube un TXT o PDF.' });
       }
     }
 
