@@ -49,8 +49,8 @@ async function processMeetingContent(content, style = 'Operativo Profesional') {
     stylePrompt = "Estilo: RRHH. Lenguaje institucional, claro, orientado a personas.";
   } else if (style === 'Comercial') {
     stylePrompt = "Estilo: Comercial. Lenguaje profesional, consultivo, orientado a valor.";
-  } else if (style && style.startsWith('Estilo Algeiba IT')) {
-    stylePrompt = "Estilo: Algeiba IT. Lenguaje sumamente profesional, técnico, orientado a infraestructura y servicios corporativos. Generar un asunto de correo apropiado para envío de minuta a clientes de IT.";
+  } else if (style && style.startsWith('Estilo Algeiba')) {
+    stylePrompt = "Estilo: Algeiba Corporativo. Lenguaje sumamente profesional, orientado a servicios corporativos. Generar un asunto de correo apropiado para envío de minuta a clientes.";
   } else {
     stylePrompt = "Estilo: Operativo Profesional.";
   }

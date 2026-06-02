@@ -52,7 +52,7 @@ export default function MeetingPage() {
       executeCopy();
       return;
     }
-    if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba IT')) {
+    if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba')) {
       setActionType(type);
       setShowNameModal(true);
     } else {
@@ -163,7 +163,7 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
     if (!meeting) return;
     
     let emailContent = '';
-    if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba IT')) {
+    if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba')) {
       const html = getItStyleHTML('', false);
       
       const blobHtml = new Blob([html], { type: 'text/html' });
@@ -198,7 +198,7 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
-      if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba IT')) {
+      if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba')) {
         element = document.createElement('div');
         element.innerHTML = getItStyleHTML(itName, true);
       } else {
