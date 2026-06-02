@@ -113,7 +113,7 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
       }
       
       if (content) {
-        content = content + '\n\n--- CONTENIDO DEL ARCHIVO ADJUNTO ---\n\n' + fileText;
+        content = '--- NOTAS Y COMENTARIOS MANUALES (PRIORIDAD ALTA) ---\n' + content + '\n\n--- CONTENIDO DEL ARCHIVO ADJUNTO ---\n\n' + fileText;
       } else {
         content = fileText;
       }

@@ -45,6 +45,9 @@ export default function MeetingPage() {
   const getItStyleHTML = (name) => {
     return `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <style>
+          li, p, div, ul { page-break-inside: avoid; }
+        </style>
         <p><strong>Estimados, ¿Cómo se encuentran? ¡Esperamos que muy bien!</strong></p>
         <p>Ante todo, les agradecemos el tiempo que nos brindaron en la reunión del día <strong>${meeting.date}</strong>. A continuación les compartimos una breve minuta de lo conversado y sus próximos accionables.</p>
         
@@ -64,7 +67,7 @@ export default function MeetingPage() {
           <strong>Temas tratados</strong>
         </div>
         <ul>
-          ${meeting.topics ? meeting.topics.map(t => `<li>${t}</li>`).join('') : '<li>No hay temas específicos.</li>'}
+          ${meeting.topics ? meeting.topics.map(t => `<li style="margin-bottom: 8px;">${t}</li>`).join('') : '<li>No hay temas específicos.</li>'}
         </ul>
 
         <div style="background-color: #4CAF50; color: white; padding: 5px 10px; margin: 20px 0 10px 0;">
@@ -85,8 +88,9 @@ export default function MeetingPage() {
         <p style="margin-top: 30px;">Desde ya quedamos atentos y agradecidos del feedback que nos puedan dar al respecto. Ante cualquier consulta o comentario, estamos a disposición.</p>
 
         <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; display: flex; align-items: center; gap: 20px;">
-          <!-- Using placeholder logo text since we can't embed the actual image file easily without a public URL -->
-          <div style="font-size: 48px; font-weight: bold; color: #b4e600; letter-spacing: -2px;">A<span style="color: #333;">i</span>t</div>
+          <div>
+            <img src="${typeof window !== 'undefined' ? window.location.origin : ''}/logo-it.png" alt="Ait Logo" style="height: 60px; display: block;" crossorigin="anonymous" />
+          </div>
           <div style="border-left: 2px solid #ccc; padding-left: 20px;">
             <p style="margin: 0; font-weight: bold; font-size: 16px;">${name}</p>
             <p style="margin: 2px 0; font-size: 14px; color: #666;">Infrastructure & Operations Specialist | Algeiba | <a href="http://www.algeiba.com" style="color: #4CAF50; text-decoration: none;">www.algeiba.com</a></p>
