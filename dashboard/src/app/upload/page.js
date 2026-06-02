@@ -56,8 +56,12 @@ export default function UploadPage() {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const token = localStorage.getItem('minutai_token');
       const res = await fetch(`${apiUrl}/api/process`, {
         method: 'POST',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: formData,
       });
 
@@ -103,6 +107,7 @@ export default function UploadPage() {
             <option value="Operativo">Operativo (Orientado a Equipos Técnicos)</option>
             <option value="RRHH">Recursos Humanos (Institucional y Claro)</option>
             <option value="Comercial">Comercial (Orientado a Clientes y Valor)</option>
+            <option value="Estilo Algeiba IT">Estilo Algeiba IT (Formato Corporativo IT)</option>
           </select>
         </div>
 

@@ -1,14 +1,22 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { Calendar, Users, Briefcase, MapPin, Copy, Mail, AlertTriangle, CheckCircle, Target, BookOpen } from 'lucide-react';
+import { Calendar, Users, Briefcase, MapPin, Copy, Mail, AlertTriangle, CheckCircle, Target, BookOpen, Download } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function MeetingPage() {
   const { id } = useParams();
   const [meeting, setMeeting] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const { user } = useAuth();
+  
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [actionType, setActionType] = useState(null); // 'copy' or 'pdf'
+  const [itName, setItName] = useState('');
+  
+  const contentRef = useRef(null);
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -24,10 +32,76 @@ export default function MeetingPage() {
       });
   }, [id]);
 
-  const copyToClipboard = () => {
-    if (!meeting) return;
-    
-    const emailContent = `
+  const handleAction = (type) => {
+    if (user?.area === 'IT' || meeting?.style === 'Estilo Algeiba IT') {
+      setActionType(type);
+      setShowNameModal(true);
+    } else {
+      if (type === 'copy') executeCopy();
+      if (type === 'pdf') executePdf();
+    }
+  };
+
+  const getItStyleHTML = (name) => {
+    return `
+      <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <p><strong>Estimados, ¿Cómo se encuentran? ¡Esperamos que muy bien!</strong></p>
+        <p>Ante todo, les agradecemos el tiempo que nos brindaron en la reunión del día <strong>${meeting.date}</strong>. A continuación les compartimos una breve minuta de lo conversado y sus próximos accionables.</p>
+        
+        <div style="border: 1px solid #ccc; padding: 10px; margin: 20px 0;">
+          <strong>Nota:</strong> Por favor siéntanse libre de agregar / modificar cualquier punto en pos de estar 100% sincronizados.
+        </div>
+
+        <div style="background-color: #4CAF50; color: white; padding: 5px 10px; margin-bottom: 10px;">
+          <strong>Participantes</strong>
+        </div>
+        <ul style="list-style-type: none; padding-left: 20px;">
+          ${meeting.client && meeting.client !== 'No especificado en la reunión.' ? `<li><strong>${meeting.client}</strong> [CLIENTE]</li>` : ''}
+          <li><strong>${meeting.participants}</strong></li>
+        </ul>
+
+        <div style="background-color: #4CAF50; color: white; padding: 5px 10px; margin: 20px 0 10px 0;">
+          <strong>Temas tratados</strong>
+        </div>
+        <ul>
+          ${meeting.topics ? meeting.topics.map(t => `<li>${t}</li>`).join('') : '<li>No hay temas específicos.</li>'}
+        </ul>
+
+        <div style="background-color: #4CAF50; color: white; padding: 5px 10px; margin: 20px 0 10px 0;">
+          <strong>Próximos accionables</strong>
+        </div>
+        <ul style="list-style-type: none; padding-left: 0;">
+          ${meeting.action_items && meeting.action_items.length > 0 ? meeting.action_items.map(a => `
+            <li style="margin-bottom: 15px;">
+              <strong>${a.action}</strong>
+              <ul style="list-style-type: circle; margin-top: 5px;">
+                <li>¿Quién? <strong>${a.owner}</strong></li>
+                <li>¿Cuándo? ${a.due_date}</li>
+              </ul>
+            </li>
+          `).join('') : '<li>No hay próximos pasos registrados.</li>'}
+        </ul>
+
+        <p style="margin-top: 30px;">Desde ya quedamos atentos y agradecidos del feedback que nos puedan dar al respecto. Ante cualquier consulta o comentario, estamos a disposición.</p>
+
+        <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; display: flex; align-items: center; gap: 20px;">
+          <!-- Using placeholder logo text since we can't embed the actual image file easily without a public URL -->
+          <div style="font-size: 48px; font-weight: bold; color: #b4e600; letter-spacing: -2px;">A<span style="color: #333;">i</span>t</div>
+          <div style="border-left: 2px solid #ccc; padding-left: 20px;">
+            <p style="margin: 0; font-weight: bold; font-size: 16px;">${name}</p>
+            <p style="margin: 2px 0; font-size: 14px; color: #666;">Infrastructure & Operations Specialist | Algeiba | <a href="http://www.algeiba.com" style="color: #4CAF50; text-decoration: none;">www.algeiba.com</a></p>
+            <p style="margin: 2px 0; font-size: 12px; color: #666;">Phone: +54 11 39885519</p>
+            <p style="margin: 2px 0; font-size: 12px; color: #666;">Address: Paraná 771. 2nd Floor. (C1017AAO). Buenos Aires. Argentina</p>
+          </div>
+        </div>
+      </div>
+    `;
+  };
+
+  const getStandardText = () => {
+    return `
+Asunto sugerido: ${meeting.email_subject || meeting.title}
+
 Estimados,
 
 Comparto la minuta correspondiente a la reunión realizada el día ${meeting.date}.
@@ -46,9 +120,64 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
 
 Saludos.
 `;
-    navigator.clipboard.writeText(emailContent);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
+  }
+
+  const executeCopy = () => {
+    if (!meeting) return;
+    
+    let emailContent = '';
+    if (user?.area === 'IT' || meeting?.style === 'Estilo Algeiba IT') {
+      const html = getItStyleHTML(itName);
+      
+      const blobHtml = new Blob([html], { type: 'text/html' });
+      const blobText = new Blob([getStandardText()], { type: 'text/plain' });
+      const data = [new ClipboardItem({
+        'text/html': blobHtml,
+        'text/plain': blobText,
+      })];
+      navigator.clipboard.write(data).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      });
+      return;
+    } else {
+      emailContent = getStandardText();
+      navigator.clipboard.writeText(emailContent);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    }
+  };
+
+  const executePdf = async () => {
+    if (typeof window !== 'undefined') {
+      const html2pdf = (await import('html2pdf.js')).default;
+      
+      let element;
+      let opt = {
+        margin:       10,
+        filename:     \`Minuta_\${meeting.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf\`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      if (user?.area === 'IT' || meeting?.style === 'Estilo Algeiba IT') {
+        element = document.createElement('div');
+        element.innerHTML = getItStyleHTML(itName);
+      } else {
+        element = contentRef.current;
+        opt.html2canvas.backgroundColor = '#1a1a2e'; // dark background for dark mode theme
+      }
+
+      html2pdf().set(opt).from(element).save();
+    }
+  };
+
+  const handleModalSubmit = (e) => {
+    e.preventDefault();
+    setShowNameModal(false);
+    if (actionType === 'copy') executeCopy();
+    if (actionType === 'pdf') executePdf();
   };
 
   if (loading) return <div style={{ textAlign: 'center', padding: '4rem' }}>Cargando minuta...</div>;
@@ -65,18 +194,52 @@ Saludos.
           </span>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <button onClick={copyToClipboard} className="btn btn-primary">
+          <button onClick={() => handleAction('copy')} className="btn btn-secondary">
             {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
             {copied ? '¡Copiado!' : 'Copiar para Correo'}
+          </button>
+          <button onClick={() => handleAction('pdf')} className="btn btn-primary">
+            <Download size={18} /> Descargar PDF
           </button>
         </div>
       </div>
 
+      {showNameModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%', padding: '2rem' }}>
+            <h3 style={{ marginBottom: '1rem' }}>Firma de Minuta</h3>
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>Por favor ingresa tu nombre completo para la firma Estilo Algeiba IT.</p>
+            <form onSubmit={handleModalSubmit}>
+              <input 
+                type="text" 
+                className="textarea" 
+                style={{ minHeight: 'auto', padding: '0.8rem', marginBottom: '1.5rem' }}
+                placeholder="Ej. Nicolas Daniel France"
+                value={itName}
+                onChange={(e) => setItName(e.target.value)}
+                required
+                autoFocus
+              />
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowNameModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary">Continuar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Main Card */}
+      <div ref={contentRef}>
       <div className="card" style={{ padding: '3rem', marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', marginBottom: '1.5rem', background: 'none', WebkitTextFillColor: 'initial', color: 'white' }}>
           {meeting.title}
         </h1>
+        {meeting.email_subject && (
+          <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+            <strong>Asunto Sugerido:</strong> {meeting.email_subject}
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem', padding: '1.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -203,6 +366,7 @@ Saludos.
           </div>
         </div>
       )}
+      </div>
       
     </div>
   );

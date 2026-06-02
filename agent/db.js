@@ -6,6 +6,14 @@ const pool = new Pool({
 
 async function initDB() {
   const queryText = `
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        area VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS meetings (
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
@@ -24,6 +32,20 @@ async function initDB() {
         style VARCHAR(50),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    DO $$ 
+    BEGIN 
+        BEGIN
+            ALTER TABLE meetings ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+        EXCEPTION
+            WHEN duplicate_column THEN null;
+        END;
+        BEGIN
+            ALTER TABLE meetings ADD COLUMN email_subject VARCHAR(255);
+        EXCEPTION
+            WHEN duplicate_column THEN null;
+        END;
+    END $$;
 
     CREATE TABLE IF NOT EXISTS action_items (
         id SERIAL PRIMARY KEY,

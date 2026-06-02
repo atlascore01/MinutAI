@@ -15,6 +15,7 @@ Reglas:
 Tu respuesta DEBE ser estrictamente un objeto JSON con la siguiente estructura (no agregues texto markdown, solo el JSON):
 {
   "title": "Nombre de la reunión",
+  "email_subject": "Asunto sugerido para el correo",
   "date": "Fecha (YYYY-MM-DD o 'No especificada')",
   "participants": "Nombres o 'No especificados'",
   "area": "Área involucrada",
@@ -47,6 +48,8 @@ async function processMeetingContent(content, style = 'Operativo Profesional') {
     stylePrompt = "Estilo: RRHH. Lenguaje institucional, claro, orientado a personas.";
   } else if (style === 'Comercial') {
     stylePrompt = "Estilo: Comercial. Lenguaje profesional, consultivo, orientado a valor.";
+  } else if (style === 'Estilo Algeiba IT') {
+    stylePrompt = "Estilo: Algeiba IT. Lenguaje sumamente profesional, técnico, orientado a infraestructura y servicios corporativos. Generar un asunto de correo apropiado para envío de minuta a clientes de IT.";
   } else {
     stylePrompt = "Estilo: Operativo Profesional.";
   }
