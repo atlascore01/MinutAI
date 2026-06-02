@@ -48,7 +48,8 @@ export default function UploadPage() {
     const formData = new FormData();
     if (file) {
       formData.append('file', file);
-    } else {
+    }
+    if (text.trim()) {
       formData.append('text', text);
     }
     formData.append('style', style);
@@ -60,13 +61,20 @@ export default function UploadPage() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error('Error al procesar');
+      if (!res.ok) {
+        let errMessage = 'Hubo un error procesando la minuta.';
+        try {
+           const errData = await res.json();
+           if (errData.error) errMessage = errData.error;
+        } catch(e) {}
+        throw new Error(errMessage);
+      }
 
       const data = await res.json();
       router.push(`/meeting/${data.id}`);
     } catch (error) {
       console.error(error);
-      alert('Hubo un error procesando la minuta. Revisa la consola.');
+      alert(error.message);
       setLoading(false);
     }
   };
@@ -140,7 +148,6 @@ export default function UploadPage() {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 style={{ height: '100%', minHeight: '200px' }}
-                disabled={file !== null}
               ></textarea>
             </div>
 

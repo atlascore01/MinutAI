@@ -21,15 +21,21 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
     let content = req.body.text || '';
     const style = req.body.style || 'Operativo Profesional';
 
-    // If file is provided, extract text (simplification for txt)
     if (req.file) {
+      let fileText = '';
       if (req.file.mimetype === 'text/plain') {
-        content = req.file.buffer.toString('utf-8');
+        fileText = req.file.buffer.toString('utf-8');
       } else if (req.file.mimetype === 'application/pdf') {
         const pdfData = await pdfParse(req.file.buffer);
-        content = pdfData.text;
+        fileText = pdfData.text;
       } else {
         return res.status(400).json({ error: 'Formato no soportado. Sube un TXT o PDF.' });
+      }
+      
+      if (content) {
+        content = content + '\n\n--- CONTENIDO DEL ARCHIVO ADJUNTO ---\n\n' + fileText;
+      } else {
+        content = fileText;
       }
     }
 
