@@ -54,7 +54,8 @@ export default function UploadPage() {
     formData.append('style', style);
 
     try {
-      const res = await fetch('http://localhost:3001/api/process', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${apiUrl}/api/process`, {
         method: 'POST',
         body: formData,
       });

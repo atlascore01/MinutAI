@@ -11,7 +11,8 @@ export default function MeetingPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetch(\`http://localhost:3001/api/minutes/\${id}\`)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    fetch(`${apiUrl}/api/minutes/${id}`)
       .then(res => res.json())
       .then(data => {
         setMeeting(data);

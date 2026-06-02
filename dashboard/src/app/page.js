@@ -9,7 +9,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/minutes')
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    fetch(`${apiUrl}/api/minutes`)
       .then((res) => res.json())
       .then((data) => {
         setMinutes(data);
