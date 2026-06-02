@@ -1,5 +1,6 @@
-const Groq = require('groq-sdk');
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const SYSTEM_PROMPT = `
 Eres un Agente Autónomo de Minutas Corporativas especializado en transformar reuniones, transcripciones, notas, documentos y audios en minutas profesionales listas para compartir.
@@ -14,8 +15,8 @@ Reglas:
 Tu respuesta DEBE ser estrictamente un objeto JSON con la siguiente estructura (no agregues texto markdown, solo el JSON):
 {
   "title": "Nombre de la reunión",
-  "date": "Fecha (YYYY-MM-DD o 'No especificado en la reunión.')",
-  "participants": "Nombres o 'No especificado en la reunión.'",
+  "date": "Fecha (YYYY-MM-DD o 'No especificada')",
+  "participants": "Nombres o 'No especificados'",
   "area": "Área involucrada",
   "business_unit": "Unidad de negocio",
   "client": "Cliente (si aplica)",
@@ -59,21 +60,24 @@ ${content}
 `;
 
   try {
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: prompt }
-      ],
-      model: 'llama-3.3-70b-versatile',
-      temperature: 0.2,
-      response_format: { type: 'json_object' }
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      systemInstruction: SYSTEM_PROMPT,
     });
 
-    const responseText = chatCompletion.choices[0]?.message?.content || '{}';
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.2
+      }
+    });
+
+    const responseText = result.response.text();
     return JSON.parse(responseText);
   } catch (error) {
-    console.error('Error in Groq LLM:', error);
-    throw new Error('Groq LLM Error: ' + error.message);
+    console.error('Error in Gemini LLM:', error);
+    throw new Error('Gemini LLM Error: ' + error.message);
   }
 }
 
