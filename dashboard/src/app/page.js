@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, Users, FileText, ChevronRight } from 'lucide-react';
+import { Calendar, Users, FileText, ChevronRight, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Home() {
   const [minutes, setMinutes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -21,6 +23,31 @@ export default function Home() {
         setLoading(false);
       });
   }, []);
+
+  const handleDelete = async (e, id) => {
+    e.preventDefault(); // prevent Link navigation
+    e.stopPropagation();
+    
+    if (!confirm('¿Estás seguro de que quieres eliminar esta minuta permanentemente?')) return;
+    
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const token = localStorage.getItem('minutai_token');
+      const res = await fetch(`${apiUrl}/api/minutes/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        setMinutes(minutes.filter(m => m.id !== id));
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error al eliminar la minuta');
+      }
+    } catch (err) {
+      alert('Error de conexión');
+    }
+  };
 
   return (
     <div>
@@ -51,7 +78,18 @@ export default function Home() {
         <div className="minutas-grid">
           {minutes.map((m) => (
             <Link href={`/meeting/${m.id}`} key={m.id} className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%', textDecoration: 'none' }}>
-              <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: '#fff' }}>{m.title}</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: '#fff' }}>{m.title}</h3>
+                {(user?.role === 'ADMIN' || user?.id === m.user_id) && (
+                  <button 
+                    onClick={(e) => handleDelete(e, m.id)}
+                    style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '0.4rem', borderRadius: '6px' }}
+                    title="Eliminar minuta"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                 <Calendar size={16} />
                 <span>{m.date}</span>

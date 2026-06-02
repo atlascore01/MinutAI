@@ -42,7 +42,7 @@ export default function MeetingPage() {
     }
   };
 
-  const getItStyleHTML = (name) => {
+  const getItStyleHTML = (name, isPdf = false) => {
     return `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
         <style>
@@ -88,10 +88,12 @@ export default function MeetingPage() {
         <p style="margin-top: 30px;">Desde ya quedamos atentos y agradecidos del feedback que nos puedan dar al respecto. Ante cualquier consulta o comentario, estamos a disposición.</p>
 
         <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; display: flex; align-items: center; gap: 20px;">
+          ${isPdf ? `
           <div>
             <img src="${typeof window !== 'undefined' ? window.location.origin : ''}/logo-it.png" alt="Ait Logo" style="height: 60px; display: block;" crossorigin="anonymous" />
           </div>
-          <div style="border-left: 2px solid #ccc; padding-left: 20px;">
+          ` : ''}
+          <div style="border-left: ${isPdf ? '2px solid #ccc' : 'none'}; padding-left: ${isPdf ? '20px' : '0'};">
             <p style="margin: 0; font-weight: bold; font-size: 16px;">${name}</p>
             <p style="margin: 2px 0; font-size: 14px; color: #666;">Infrastructure & Operations Specialist | Algeiba | <a href="http://www.algeiba.com" style="color: #4CAF50; text-decoration: none;">www.algeiba.com</a></p>
             <p style="margin: 2px 0; font-size: 12px; color: #666;">Phone: +54 11 39885519</p>
@@ -131,7 +133,7 @@ Saludos.
     
     let emailContent = '';
     if (user?.area === 'IT' || meeting?.style === 'Estilo Algeiba IT') {
-      const html = getItStyleHTML(itName);
+      const html = getItStyleHTML(itName, false);
       
       const blobHtml = new Blob([html], { type: 'text/html' });
       const blobText = new Blob([getStandardText()], { type: 'text/plain' });
@@ -167,7 +169,7 @@ Saludos.
 
       if (user?.area === 'IT' || meeting?.style === 'Estilo Algeiba IT') {
         element = document.createElement('div');
-        element.innerHTML = getItStyleHTML(itName);
+        element.innerHTML = getItStyleHTML(itName, true);
       } else {
         element = contentRef.current;
         opt.html2canvas.backgroundColor = '#1a1a2e'; // dark background for dark mode theme

@@ -8,6 +8,7 @@ export default function UploadPage() {
   const router = useRouter();
   const [file, setFile] = useState(null);
   const [text, setText] = useState('');
+  const [additionalNotes, setAdditionalNotes] = useState('');
   const [style, setStyle] = useState('Operativo Profesional');
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -51,6 +52,9 @@ export default function UploadPage() {
     }
     if (text.trim()) {
       formData.append('text', text);
+    }
+    if (additionalNotes.trim()) {
+      formData.append('additionalNotes', additionalNotes);
     }
     formData.append('style', style);
 
@@ -112,7 +116,12 @@ export default function UploadPage() {
         </div>
 
         <div className="input-group">
-          <label>Opciones de Entrada</label>
+          <label>
+            Opciones de Entrada
+            <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--accent-color)', marginTop: '0.3rem', fontWeight: 'normal', fontStyle: 'italic' }}>
+              Tener en cuenta agregar en "Notas adicionales para minuta" la fecha de la transcripción por si la minuta no tiene esa info.
+            </span>
+          </label>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
             
             {/* Opción 1: Archivo */}
@@ -149,7 +158,7 @@ export default function UploadPage() {
             <div>
               <textarea 
                 className="textarea" 
-                placeholder="...O pega la transcripción/notas manualmente aquí"
+                placeholder="...O pega la transcripción manualmente aquí (Ingreso Manual)"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 style={{ height: '100%', minHeight: '200px' }}
@@ -157,6 +166,17 @@ export default function UploadPage() {
             </div>
 
           </div>
+        </div>
+
+        <div className="input-group" style={{ marginTop: '2rem' }}>
+          <label>Notas adicionales para minuta</label>
+          <textarea 
+            className="textarea" 
+            placeholder="Añade contexto extra como: detalles del cliente, fecha de la reunión, nombres mal pronunciados, etc."
+            value={additionalNotes}
+            onChange={(e) => setAdditionalNotes(e.target.value)}
+            style={{ minHeight: '100px', marginTop: '0.5rem' }}
+          ></textarea>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>

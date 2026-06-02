@@ -99,6 +99,7 @@ app.delete('/api/users/:id', authMiddleware, adminMiddleware, async (req, res) =
 app.post('/api/process', upload.single('file'), async (req, res) => {
   try {
     let content = req.body.text || '';
+    const additionalNotes = req.body.additionalNotes || '';
     const style = req.body.style || 'Operativo Profesional';
 
     if (req.file) {
@@ -112,15 +113,15 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
         return res.status(400).json({ error: 'Formato no soportado. Sube un TXT o PDF.' });
       }
       
-      if (content) {
-        content = '--- NOTAS Y COMENTARIOS MANUALES (PRIORIDAD ALTA) ---\n' + content + '\n\n--- CONTENIDO DEL ARCHIVO ADJUNTO ---\n\n' + fileText;
-      } else {
-        content = fileText;
-      }
+      content = fileText + (content ? '\n\n--- INGRESO MANUAL ADICIONAL ---\n\n' + content : '');
     }
 
     if (!content) {
       return res.status(400).json({ error: 'No content provided' });
+    }
+    
+    if (additionalNotes) {
+      content = '--- NOTAS ADICIONALES PARA LA MINUTA (PRIORIDAD MÁXIMA: ten esto muy en cuenta para extraer contexto, clientes, y fechas de la transcripción principal) ---\n' + additionalNotes + '\n\n--- CONTENIDO PRINCIPAL DE LA REUNIÓN ---\n\n' + content;
     }
 
     const aiResult = await processMeetingContent(content, style);
@@ -195,6 +196,29 @@ app.get('/api/minutes/:id', async (req, res) => {
     meeting.action_items = actionsRes.rows;
 
     res.json(meeting);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server Error: ' + error.message });
+  }
+});
+
+app.delete('/api/minutes/:id', authMiddleware, async (req, res) => {
+  try {
+    const meetingId = req.params.id;
+    const meetingRes = await db.query('SELECT user_id FROM meetings WHERE id = $1', [meetingId]);
+    
+    if (meetingRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    
+    // Check permission
+    if (req.user.role !== 'ADMIN' && meetingRes.rows[0].user_id !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes permiso para eliminar esta minuta' });
+    }
+
+    await db.query('DELETE FROM action_items WHERE meeting_id = $1', [meetingId]);
+    await db.query('DELETE FROM meetings WHERE id = $1', [meetingId]);
+    res.json({ success: true });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server Error: ' + error.message });
