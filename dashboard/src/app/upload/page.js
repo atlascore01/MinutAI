@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { UploadCloud, FileText, Settings, Sparkles, Loader2 } from 'lucide-react';
+import { UploadCloud, FileText, Settings, Sparkles, Loader2, Mic, MicOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function UploadPage() {
@@ -14,13 +14,72 @@ export default function UploadPage() {
   const [style, setStyle] = useState('Estilo Algeiba IT');
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [isRecordingText, setIsRecordingText] = useState(false);
+  const [isRecordingNotes, setIsRecordingNotes] = useState(false);
   const fileInputRef = useRef(null);
+  const recognitionRef = useRef(null);
 
   useEffect(() => {
     if (user?.area) {
       setStyle(user.area === 'T&C' ? 'Estilo Algeiba T&C' : 'Estilo Algeiba IT');
     }
   }, [user]);
+
+  const toggleRecording = (target) => {
+    if ((target === 'text' && isRecordingText) || (target === 'notes' && isRecordingNotes)) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Tu navegador no soporta la función de micrófono. Usa Chrome o Safari.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES';
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    recognition.onstart = () => {
+      if (target === 'text') setIsRecordingText(true);
+      if (target === 'notes') setIsRecordingNotes(true);
+    };
+
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+        }
+      }
+      
+      if (finalTranscript) {
+        if (target === 'text') {
+          setText(prev => (prev + ' ' + finalTranscript).trim());
+        } else if (target === 'notes') {
+          setAdditionalNotes(prev => (prev + ' ' + finalTranscript).trim());
+        }
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error(event.error);
+      if (target === 'text') setIsRecordingText(false);
+      if (target === 'notes') setIsRecordingNotes(false);
+    };
+
+    recognition.onend = () => {
+      if (target === 'text') setIsRecordingText(false);
+      if (target === 'notes') setIsRecordingNotes(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -132,7 +191,7 @@ export default function UploadPage() {
               Tener en cuenta agregar en "Notas adicionales para minuta" la fecha de la transcripción por si la minuta no tiene esa info.
             </span>
           </label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+          <div className="upload-grid">
             
             {/* Opción 1: Archivo */}
             <div 
@@ -165,7 +224,25 @@ export default function UploadPage() {
             </div>
 
             {/* Opción 2: Texto Directo */}
-            <div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+                <button 
+                  type="button" 
+                  onClick={() => toggleRecording('text')}
+                  className="btn btn-secondary"
+                  style={{ 
+                    padding: '0.5rem', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem',
+                    borderColor: isRecordingText ? 'var(--danger)' : 'var(--card-border)',
+                    color: isRecordingText ? 'var(--danger)' : 'var(--text-secondary)'
+                  }}
+                  title={isRecordingText ? 'Detener grabación' : 'Dictar por micrófono'}
+                >
+                  {isRecordingText ? <><MicOff size={16} /> Grabando...</> : <><Mic size={16} /> Dictar</>}
+                </button>
+              </div>
               <textarea 
                 className="textarea" 
                 placeholder="...O pega la transcripción manualmente aquí (Ingreso Manual)"
@@ -179,7 +256,25 @@ export default function UploadPage() {
         </div>
 
         <div className="input-group" style={{ marginTop: '2rem' }}>
-          <label>Notas adicionales para minuta</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <label style={{ marginBottom: 0 }}>Notas adicionales para minuta</label>
+            <button 
+              type="button" 
+              onClick={() => toggleRecording('notes')}
+              className="btn btn-secondary"
+              style={{ 
+                padding: '0.5rem', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.5rem',
+                borderColor: isRecordingNotes ? 'var(--danger)' : 'var(--card-border)',
+                color: isRecordingNotes ? 'var(--danger)' : 'var(--text-secondary)'
+              }}
+              title={isRecordingNotes ? 'Detener grabación' : 'Dictar por micrófono'}
+            >
+              {isRecordingNotes ? <><MicOff size={16} /> Grabando...</> : <><Mic size={16} /> Dictar</>}
+            </button>
+          </div>
           <textarea 
             className="textarea" 
             placeholder="Añade contexto extra como: detalles del cliente, fecha de la reunión, nombres mal pronunciados, etc."
