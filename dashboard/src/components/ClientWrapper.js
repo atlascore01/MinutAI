@@ -2,7 +2,8 @@
 
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import Link from 'next/link';
-import { Bot, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 function Navbar() {
   const { user, logout } = useAuth();
@@ -10,8 +11,7 @@ function Navbar() {
   return (
     <header className="header">
       <Link href="/" className="logo">
-        <Bot size={28} color="var(--accent-color)" />
-        <span>MinutAI</span>
+        <img src="/logo%20(2).png" alt="MinutAI Logo" style={{ height: '35px', objectFit: 'contain' }} />
       </Link>
       <nav style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
         {user ? (
@@ -45,9 +45,12 @@ function Navbar() {
 }
 
 export default function ClientWrapper({ children }) {
+  const pathname = usePathname();
+  const isLogin = pathname === '/login';
+
   return (
     <AuthProvider>
-      <Navbar />
+      {!isLogin && <Navbar />}
       <main className="container">
         {children}
       </main>
