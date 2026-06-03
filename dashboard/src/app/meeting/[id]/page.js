@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { Calendar, Users, Briefcase, MapPin, Copy, Mail, AlertTriangle, CheckCircle, Target, BookOpen, Download } from 'lucide-react';
+import { Calendar, Users, Briefcase, MapPin, Copy, Mail, AlertTriangle, CheckCircle, Target, BookOpen, Download, FileText } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 export default function MeetingPage() {
@@ -13,6 +13,7 @@ export default function MeetingPage() {
   const { user } = useAuth();
   
   const [showNameModal, setShowNameModal] = useState(false);
+  const [showResourcesModal, setShowResourcesModal] = useState(false);
   const [actionType, setActionType] = useState(null); // 'copy' or 'pdf'
   const [itName, setItName] = useState('');
   
@@ -244,6 +245,9 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
           </span>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
+          <button onClick={() => setShowResourcesModal(true)} className="btn btn-secondary" style={{ backgroundColor: 'transparent', border: '1px solid ' + areaColor, color: areaColor }}>
+            <FileText size={18} /> Recursos
+          </button>
           <button onClick={() => handleAction('copy')} className="btn btn-secondary">
             {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
             {copied ? '¡Copiado!' : 'Copiar para Correo'}
@@ -275,6 +279,44 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
                 <button type="submit" className="btn btn-primary" style={{ backgroundColor: areaColor, color: getTextColor(meeting.area) }}>Continuar</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showResourcesModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="card" style={{ maxWidth: '600px', width: '100%', padding: '2rem', maxHeight: '80vh', overflowY: 'auto' }}>
+            <h3 style={{ marginBottom: '1.5rem', color: areaColor }}>Recursos y Opciones de Entrada</h3>
+            
+            <div style={{ marginBottom: '1.5rem' }}>
+              <strong>Estilo Usado:</strong> {meeting.style}
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <strong>Notas Adicionales:</strong>
+              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', marginTop: '0.5rem', whiteSpace: 'pre-wrap' }}>
+                {meeting.custom_notes || 'No se agregaron notas manuales'}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <strong>Entrada Principal (Archivo o Texto):</strong>
+              {meeting.file_url ? (
+                <div style={{ marginTop: '0.5rem' }}>
+                  <a href={meeting.file_url} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'inline-flex', padding: '0.5rem 1rem', fontSize: '0.9rem', backgroundColor: areaColor, color: getTextColor(meeting.area) }}>
+                    <Download size={16} /> Ver / Descargar Archivo Original
+                  </a>
+                </div>
+              ) : (
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', marginTop: '0.5rem', whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto', fontSize: '0.85rem' }}>
+                  {meeting.raw_text?.replace(/--- NOTAS ADICIONALES PARA LA MINUTA[\s\S]*--- CONTENIDO PRINCIPAL DE LA REUNIÓN ---/, '').trim() || 'Texto manual no disponible'}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowResourcesModal(false)}>Cerrar</button>
+            </div>
           </div>
         </div>
       )}

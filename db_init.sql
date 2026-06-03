@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS meetings (
     risks JSONB,
     custom_notes TEXT,
     raw_text TEXT,
+    file_url VARCHAR(1000),
     style VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -8,6 +8,7 @@ const db = require('./db');
 const { processMeetingContent } = require('./ai');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
+const { put, del } = require('@vercel/blob');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -100,8 +101,9 @@ app.delete('/api/users/:id', authMiddleware, adminMiddleware, async (req, res) =
 app.post('/api/process', upload.single('file'), async (req, res) => {
   try {
     let content = req.body.text || '';
-    const additionalNotes = req.body.additionalNotes || '';
-    const style = req.body.style || 'Operativo Profesional';
+    let additionalNotes = req.body.additionalNotes || '';
+    let style = req.body.style || 'Operativo Profesional';
+    let fileUrl = null;
 
     if (req.file) {
       let fileText = '';
@@ -118,6 +120,18 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
       }
       
       content = fileText + (content ? '\n\n--- INGRESO MANUAL ADICIONAL ---\n\n' + content : '');
+
+      // Upload to Vercel Blob
+      try {
+        const blobOptions = {
+          access: 'public',
+          token: process.env.BLOB_READ_WRITE_TOKEN
+        };
+        const blobResult = await put(`minutas/${Date.now()}_${req.file.originalname}`, req.file.buffer, blobOptions);
+        fileUrl = blobResult.url;
+      } catch (blobErr) {
+        console.error('Error uploading to Vercel Blob:', blobErr);
+      }
     }
 
     if (!content) {
@@ -132,8 +146,8 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
 
     // Save to DB
     const insertMeeting = `
-      INSERT INTO meetings (user_id, title, email_subject, date, participants, area, business_unit, client, objective, summary, topics, agreements, decisions, risks, custom_notes, raw_text, style)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+      INSERT INTO meetings (user_id, title, email_subject, date, participants, area, business_unit, client, objective, summary, topics, agreements, decisions, risks, custom_notes, raw_text, file_url, style)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       RETURNING id;
     `;
     const meetingValues = [
@@ -153,6 +167,7 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
       JSON.stringify(aiResult.risks || []),
       aiResult.custom_notes || null,
       content,
+      fileUrl,
       style
     ];
 
@@ -178,9 +193,21 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
   }
 });
 
-app.get('/api/minutes', async (req, res) => {
+app.get('/api/minutes', authMiddleware, async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT * FROM meetings ORDER BY created_at DESC');
+    // Lazy 48h cleanup
+    try {
+      const oldMeetings = await db.query(`SELECT file_url FROM meetings WHERE created_at < NOW() - INTERVAL '48 hours' AND file_url IS NOT NULL`);
+      if (oldMeetings.rows.length > 0) {
+        const urls = oldMeetings.rows.map(r => r.file_url);
+        await del(urls, { token: process.env.BLOB_READ_WRITE_TOKEN });
+      }
+      await db.query(`DELETE FROM meetings WHERE created_at < NOW() - INTERVAL '48 hours'`);
+    } catch (cleanupErr) {
+      console.error('Error during 48h cleanup:', cleanupErr);
+    }
+
+    const { rows } = await db.query('SELECT * FROM meetings WHERE user_id = $1 ORDER BY created_at DESC', [req.user.id]);
     res.json(rows);
   } catch (error) {
     console.error(error);

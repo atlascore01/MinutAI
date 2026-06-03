@@ -12,7 +12,12 @@ export default function Home() {
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    fetch(`${apiUrl}/api/minutes`)
+    const token = localStorage.getItem('minutai_token');
+    fetch(`${apiUrl}/api/minutes`, {
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    })
       .then((res) => res.json())
       .then((data) => {
         setMinutes(data);
@@ -23,6 +28,15 @@ export default function Home() {
         setLoading(false);
       });
   }, []);
+
+  const getRemainingHours = (createdAt) => {
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+    const diffMs = now - createdDate;
+    const diffHours = diffMs / (1000 * 60 * 60);
+    const remaining = 48 - diffHours;
+    return Math.max(0, Math.floor(remaining));
+  };
 
   const handleDelete = async (e, id) => {
     e.preventDefault(); // prevent Link navigation
@@ -61,6 +75,10 @@ export default function Home() {
         </Link>
       </div>
 
+      <div style={{ padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.2)', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <strong>Aviso:</strong> Por motivos de privacidad y seguridad, todas las minutas y sus archivos adjuntos se destruyen automáticamente luego de 48 horas de ser creadas.
+      </div>
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: '4rem' }}>
           <p>Cargando minutas...</p>
@@ -79,7 +97,12 @@ export default function Home() {
           {minutes.map((m) => (
             <Link href={`/meeting/${m.id}`} key={m.id} className="card" style={{ display: 'flex', flexDirection: 'column', height: '100%', textDecoration: 'none' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: '#fff' }}>{m.title}</h3>
+                <div>
+                  <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: '#fff' }}>{m.title}</h3>
+                  <span style={{ fontSize: '0.8rem', color: getRemainingHours(m.created_at) < 12 ? 'var(--danger)' : 'var(--accent-color)', background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px', display: 'inline-block', marginBottom: '1rem' }}>
+                    Quedan {getRemainingHours(m.created_at)} hs
+                  </span>
+                </div>
                 {(user?.role === 'ADMIN' || user?.id === m.user_id) && (
                   <button 
                     onClick={(e) => handleDelete(e, m.id)}
