@@ -43,8 +43,8 @@ export default function LoginPage() {
             <label>Usuario</label>
             <input 
               type="text" 
-              className="textarea" 
-              style={{ minHeight: 'auto', padding: '0.8rem' }}
+              className="input" 
+              style={{ padding: '0.8rem' }}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -55,8 +55,8 @@ export default function LoginPage() {
             <label>Contraseña</label>
             <input 
               type="password" 
-              className="textarea" 
-              style={{ minHeight: 'auto', padding: '0.8rem' }}
+              className="input" 
+              style={{ padding: '0.8rem' }}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
