@@ -238,13 +238,13 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
     <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
       
       {/* Header Actions */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div className="header-actions">
         <div>
-          <span className="badge" style={{ marginBottom: '1rem', background: 'rgba(255,255,255,0.1)', color: areaColor }}>
+          <span className="badge" style={{ background: 'rgba(255,255,255,0.1)', color: areaColor }}>
             Estilo: {meeting.style}
           </span>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div className="header-buttons">
           <button onClick={() => setShowResourcesModal(true)} className="btn btn-secondary" style={{ backgroundColor: 'transparent', border: '1px solid ' + areaColor, color: areaColor }}>
             <FileText size={18} /> Recursos
           </button>

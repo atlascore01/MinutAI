@@ -230,6 +230,18 @@ table {
   border-collapse: collapse;
 }
 
+/* React Markdown Table Responsiveness */
+.card table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.card table th, .card table td {
+  white-space: normal;
+  min-width: 200px;
+}
+
 th, td {
   padding: 1rem;
   text-align: left;
@@ -281,6 +293,20 @@ tr:hover td {
   width: 100%;
 }
 
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
   .header {
@@ -292,6 +318,24 @@ tr:hover td {
   .header nav {
     flex-wrap: wrap;
     justify-content: center;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .header-buttons {
+    width: 100%;
+    justify-content: stretch;
+  }
+  
+  .header-buttons .btn {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+    padding: 0.8rem 0.5rem;
+    font-size: 0.9rem;
   }
   
   .upload-grid {
