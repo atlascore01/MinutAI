@@ -300,16 +300,17 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
             </div>
 
             <div style={{ marginBottom: '1.5rem' }}>
-              <strong>Entrada Principal (Archivo o Texto):</strong>
-              {meeting.file_url ? (
-                <div style={{ marginTop: '0.5rem' }}>
-                  <a href={meeting.file_url} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'inline-flex', padding: '0.5rem 1rem', fontSize: '0.9rem', backgroundColor: areaColor, color: getTextColor(meeting.area) }}>
+              <strong>Entrada Principal (Texto Procesado):</strong>
+              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', marginTop: '0.5rem', whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto', fontSize: '0.85rem' }}>
+                {meeting.raw_text?.replace(/--- NOTAS ADICIONALES PARA LA MINUTA[\s\S]*--- CONTENIDO PRINCIPAL DE LA REUNIÓN ---/, '').trim() || 'Texto no disponible'}
+              </div>
+
+              {meeting.file_url && (
+                <div style={{ marginTop: '1rem' }}>
+                  <strong>Archivo Subido:</strong><br />
+                  <a href={meeting.file_url} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ display: 'inline-flex', padding: '0.5rem 1rem', fontSize: '0.9rem', backgroundColor: areaColor, color: getTextColor(meeting.area), marginTop: '0.5rem' }}>
                     <Download size={16} /> Ver / Descargar Archivo Original
                   </a>
-                </div>
-              ) : (
-                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', marginTop: '0.5rem', whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto', fontSize: '0.85rem' }}>
-                  {meeting.raw_text?.replace(/--- NOTAS ADICIONALES PARA LA MINUTA[\s\S]*--- CONTENIDO PRINCIPAL DE LA REUNIÓN ---/, '').trim() || 'Texto manual no disponible'}
                 </div>
               )}
             </div>
