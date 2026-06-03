@@ -127,10 +127,12 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
           access: 'public',
           token: process.env.BLOB_READ_WRITE_TOKEN
         };
-        const blobResult = await put(`minutas/${Date.now()}_${req.file.originalname}`, req.file.buffer, blobOptions);
+        const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const blobResult = await put(`minutas/${Date.now()}_${safeName}`, req.file.buffer, blobOptions);
         fileUrl = blobResult.url;
       } catch (blobErr) {
         console.error('Error uploading to Vercel Blob:', blobErr);
+        return res.status(500).json({ error: 'Error subiendo el archivo a Vercel Blob: ' + (blobErr.message || 'Error desconocido') });
       }
     }
 
