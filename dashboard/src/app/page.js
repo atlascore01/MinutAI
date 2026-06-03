@@ -75,8 +75,8 @@ export default function Home() {
         </Link>
       </div>
 
-      <div style={{ padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.2)', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <strong>Aviso:</strong> Por motivos de privacidad y seguridad, todas las minutas y sus archivos adjuntos se destruyen automáticamente luego de 48 horas de ser creadas.
+      <div style={{ padding: '0.75rem 1rem', background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-secondary)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+        <span style={{ color: 'var(--accent-color)' }}>ℹ️ Info:</span> Por motivos de privacidad, todas las minutas y sus archivos adjuntos se eliminan automáticamente luego de 48 horas.
       </div>
 
       {loading ? (
