@@ -9,9 +9,9 @@ function Navbar() {
   const { user, logout } = useAuth();
 
   return (
-    <header className="header">
+    <header className="header" style={{ padding: '0.5rem 2rem' }}>
       <Link href="/" className="logo">
-        <img src="/logo%20(2).png" alt="MinutAI Logo" style={{ height: '35px', objectFit: 'contain' }} />
+        <img src="/logo%20(2).png" alt="MinutAI Logo" style={{ height: '55px', objectFit: 'contain' }} />
       </Link>
       <nav style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
         {user ? (

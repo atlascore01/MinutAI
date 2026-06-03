@@ -24,8 +24,8 @@ export default function LoginPage() {
 
   return (
     <div style={{ maxWidth: '400px', margin: '4rem auto', padding: '2rem' }} className="card">
-      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-        <img src="/logo%20(2).png" alt="MinutAI Logo" style={{ height: '60px', objectFit: 'contain' }} />
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <img src="/logo%20(2).png" alt="MinutAI Logo" style={{ height: '100px', objectFit: 'contain' }} />
       </div>
       <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>
         Iniciar Sesión
