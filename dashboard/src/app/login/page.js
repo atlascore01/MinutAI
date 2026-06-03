@@ -24,11 +24,11 @@ export default function LoginPage() {
 
   return (
     <div className="login-wrapper">
-      <div style={{ maxWidth: '400px', width: '100%', padding: '2rem' }} className="card">
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <img src="/logo%20(2).png" alt="MinutAI Logo" style={{ height: '100px', objectFit: 'contain' }} />
+      <div style={{ maxWidth: '350px', width: '100%', padding: '1.5rem' }} className="card">
+        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <img src="/logo%20(2).png" alt="MinutAI Logo" style={{ height: '90px', objectFit: 'contain' }} />
         </div>
-        <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.5rem' }}>
           Iniciar Sesión
         </h2>
         
@@ -39,12 +39,12 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="input-group" style={{ marginBottom: '1rem' }}>
-            <label>Usuario</label>
+          <div className="input-group" style={{ marginBottom: '0.8rem' }}>
+            <label style={{ fontSize: '0.9rem', marginBottom: '0.3rem' }}>Usuario</label>
             <input 
               type="text" 
               className="input" 
-              style={{ padding: '0.8rem' }}
+              style={{ padding: '0.6rem', fontSize: '0.95rem' }}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -52,18 +52,18 @@ export default function LoginPage() {
           </div>
           
           <div className="input-group" style={{ marginBottom: '1rem' }}>
-            <label>Contraseña</label>
+            <label style={{ fontSize: '0.9rem', marginBottom: '0.3rem' }}>Contraseña</label>
             <input 
               type="password" 
               className="input" 
-              style={{ padding: '0.8rem' }}
+              style={{ padding: '0.6rem', fontSize: '0.95rem' }}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '1rem', marginTop: '1rem' }}>
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.8rem', marginTop: '0.5rem', fontSize: '1rem' }}>
             Ingresar
           </button>
         </form>
