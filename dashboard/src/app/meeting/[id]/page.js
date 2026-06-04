@@ -93,7 +93,7 @@ export default function MeetingPage() {
         </div>
         <ul style="list-style-type: none; padding-left: 20px;">
           ${meeting.client && meeting.client !== 'No especificado en la reunión.' ? `<li><strong>${meeting.client}</strong> [CLIENTE]</li>` : ''}
-          <li><strong>${meeting.participants}</strong></li>
+          ${meeting.participants ? meeting.participants.split(',').map(p => `<li>- ${p.trim()}</li>`).join('') : ''}
         </ul>
 
         <div style="background-color: ${areaColor}; color: ${areaTextColor}; padding: 5px 10px; margin: 20px 0 10px 0;">
