@@ -21,6 +21,10 @@ app.use(express.json());
 // Initialize DB on start
 db.initDB();
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime() });
+});
+
 const JWT_SECRET = process.env.JWT_SECRET || 'minutai_secret_key';
 
 const authMiddleware = (req, res, next) => {
@@ -275,7 +279,25 @@ app.put('/api/minutes/:id', async (req, res) => {
   }
 });
 
+const keepAlive = () => {
+  const url = process.env.RENDER_EXTERNAL_URL;
+  if (!url) {
+    console.log('No RENDER_EXTERNAL_URL environment variable found. Self-ping keep-alive skipped.');
+    return;
+  }
+  const https = require('https');
+  // Ping every 13 minutes (780000 ms) to keep the Render free instance awake
+  setInterval(() => {
+    https.get(`${url}/api/health`, (res) => {
+      console.log(`Self-ping keep-alive status code: ${res.statusCode}`);
+    }).on('error', (err) => {
+      console.error('Keep-alive ping failed:', err.message);
+    });
+  }, 780000);
+};
+
 app.listen(port, () => {
   console.log(`Agent API running on port ${port}`);
   startDiscordBot();
+  keepAlive();
 });
