@@ -11,7 +11,7 @@ export default function UploadPage() {
   const [file, setFile] = useState(null);
   const [text, setText] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
-  const [style, setStyle] = useState('Estilo Algeiba IT');
+  const [style, setStyle] = useState('Estilo Algeiba');
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [isRecordingText, setIsRecordingText] = useState(false);
@@ -21,7 +21,7 @@ export default function UploadPage() {
 
   useEffect(() => {
     if (user?.area) {
-      setStyle(user.area === 'T&C' ? 'Estilo Algeiba T&C' : 'Estilo Algeiba IT');
+      setStyle(user.area === 'T&C' ? 'Estilo Algeiba T&C' : 'Estilo Algeiba');
     }
   }, [user]);
 
@@ -173,8 +173,8 @@ export default function UploadPage() {
             value={style}
             onChange={(e) => setStyle(e.target.value)}
           >
-            <option value={user?.area === 'T&C' ? 'Estilo Algeiba T&C' : 'Estilo Algeiba IT'}>
-              {user?.area === 'T&C' ? 'Estilo Algeiba T&C' : 'Estilo Algeiba IT'} (Formato Corporativo {user?.area || 'IT'})
+            <option value={user?.area === 'T&C' ? 'Estilo Algeiba T&C' : 'Estilo Algeiba'}>
+              {user?.area === 'T&C' ? 'Estilo Algeiba T&C' : 'Estilo Algeiba'} (Formato Corporativo {user?.area || 'IT'})
             </option>
             <option value="Operativo Profesional">Operativo Profesional</option>
             <option value="Ejecutivo">Ejecutivo (Orientado a Gerencia)</option>

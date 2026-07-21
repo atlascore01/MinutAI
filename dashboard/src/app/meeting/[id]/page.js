@@ -73,75 +73,228 @@ export default function MeetingPage() {
   };
 
   const getItStyleHTML = (name, isPdf = false) => {
-    const areaColor = getAreaColor(meeting?.area);
-    const areaTextColor = getTextColor(meeting?.area);
+    const areaColor = '#0b3a42'; // Dark teal used in the design
+    const accentColor = '#207268'; // Teal used for headers
+    const headerBg = 'linear-gradient(90deg, #093c42 0%, #0d555d 70%, #68b89e 100%)';
+    const logoUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/logonuevo.png`;
 
-    return `
-      <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
-        <style>
-          li, p, div, ul { page-break-inside: avoid; }
-        </style>
-        <p><strong>Estimados, ¿Cómo se encuentran? ¡Esperamos que muy bien!</strong></p>
-        <p>Ante todo, les agradecemos el tiempo que nos brindaron en la reunión del día <strong>${meeting.date}</strong>. A continuación les compartimos una breve minuta de lo conversado y sus próximos accionables.</p>
-        
-        <div style="border: 1px solid #ccc; padding: 10px; margin: 20px 0;">
-          <strong>Nota:</strong> Por favor siéntanse libre de agregar / modificar cualquier punto en pos de estar 100% sincronizados.
-        </div>
-
-        <div style="background-color: ${areaColor}; color: ${areaTextColor}; padding: 5px 10px; margin-bottom: 10px;">
-          <strong>Participantes</strong>
-        </div>
-        <ul style="list-style-type: none; padding-left: 20px;">
-          ${meeting.client && meeting.client !== 'No especificado en la reunión.' ? `<li><strong>${meeting.client}</strong> [CLIENTE]</li>` : ''}
-          ${meeting.participants ? meeting.participants.split(',').map(p => `<li>- ${p.trim()}</li>`).join('') : ''}
-        </ul>
-
-        <div style="background-color: ${areaColor}; color: ${areaTextColor}; padding: 5px 10px; margin: 20px 0 10px 0;">
-          <strong>Temas tratados</strong>
-        </div>
-        <ul>
-          ${meeting.topics ? meeting.topics.map(t => `<li style="margin-bottom: 8px;">${t}</li>`).join('') : '<li>No hay temas específicos.</li>'}
-        </ul>
-
-        <div style="background-color: ${areaColor}; color: ${areaTextColor}; padding: 5px 10px; margin: 20px 0 10px 0;">
-          <strong>Próximos accionables</strong>
-        </div>
-        <ul style="list-style-type: none; padding-left: 0;">
-          ${meeting.action_items && meeting.action_items.length > 0 ? meeting.action_items.map(a => `
-            <li style="margin-bottom: 15px;">
-              <strong>${a.action}</strong>
-              <ul style="list-style-type: circle; margin-top: 5px;">
-                <li>¿Quién? <strong>${a.owner}</strong></li>
-                <li>¿Cuándo? ${a.due_date}</li>
-              </ul>
-            </li>
-          `).join('') : '<li>No hay próximos pasos registrados.</li>'}
-        </ul>
-
-        ${meeting.custom_notes ? `
-        <div style="background-color: ${areaColor}; color: ${areaTextColor}; padding: 5px 10px; margin: 20px 0 10px 0;">
-          <strong>Notas y Comentarios Extra</strong>
-        </div>
-        <p>${meeting.custom_notes.replace(/\n/g, '<br/>')}</p>
-        ` : ''}
-
-        <p style="margin-top: 30px;">Desde ya quedamos atentos y agradecidos del feedback que nos puedan dar al respecto. Ante cualquier consulta o comentario, estamos a disposición.</p>
-
-        ${isPdf ? `
-        <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; display: flex; align-items: center; gap: 20px;">
-          <div>
-            <img src="${typeof window !== 'undefined' ? window.location.origin : ''}/${getLogoFile(meeting?.area)}" alt="Algeiba Logo" style="height: 60px; display: block;" crossorigin="anonymous" />
-          </div>
-          <div style="border-left: 2px solid #ccc; padding-left: 20px;">
-            <p style="margin: 0; font-weight: bold; font-size: 16px;">${name}</p>
-            <p style="margin: 2px 0; font-size: 14px; color: #666;">| Algeiba | <a href="http://www.algeiba.com" style="color: ${areaColor}; text-decoration: none;">www.algeiba.com</a></p>
-            <p style="margin: 2px 0; font-size: 12px; color: #666;">Phone: +54 11 39885519</p>
-            <p style="margin: 2px 0; font-size: 12px; color: #666;">Address: Paraná 771. 2nd Floor. (C1017AAO). Buenos Aires. Argentina</p>
-          </div>
-        </div>
-        ` : ''}
+    const headerHTML = `
+      <div style="background: ${headerBg}; padding: 12px 24px; display: flex; align-items: center; border-bottom: 3px solid #207268; margin-bottom: 20px; border-radius: 4px 4px 0 0;">
+        <img src="${logoUrl}" alt="Atlascore Logo" style="height: 28px; display: block;" crossorigin="anonymous" />
       </div>
     `;
+
+    const footerHTML = (pageNum) => `
+      <div style="margin-top: 30px; border-top: 1px solid #ccc; padding-top: 8px; display: flex; justify-content: flex-end; font-family: Arial, sans-serif; font-size: 11px; color: #666;">
+        <span>Atlascore - Minuta | Página ${pageNum}</span>
+      </div>
+    `;
+
+    const sectionHeaderHTML = (title) => `
+      <div style="background-color: #e9f7f5; border: 1px solid #a3dacf; border-radius: 4px; padding: 8px 12px; margin-top: 20px; margin-bottom: 12px;">
+        <h3 style="color: #1d6d63; margin: 0; font-size: 15px; font-weight: bold; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">${title}</h3>
+      </div>
+    `;
+
+    // 1. Metadata Info Table
+    const infoTableHTML = `
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-family: Arial, sans-serif; font-size: 14px;">
+        <tr style="border-bottom: 1px solid #ccc;">
+          <td style="background-color: #0b3a42; color: white; font-weight: bold; padding: 10px; width: 25%; border: 1px solid #ccc;">Fecha</td>
+          <td style="padding: 10px; border: 1px solid #ccc; background-color: #ffffff; color: #333;">${meeting.date}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #ccc;">
+          <td style="background-color: #0b3a42; color: white; font-weight: bold; padding: 10px; border: 1px solid #ccc;">Participantes</td>
+          <td style="padding: 10px; border: 1px solid #ccc; background-color: #ffffff; color: #333;">${meeting.participants || 'No especificados'}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #ccc;">
+          <td style="background-color: #0b3a42; color: white; font-weight: bold; padding: 10px; border: 1px solid #ccc;">Área</td>
+          <td style="padding: 10px; border: 1px solid #ccc; background-color: #ffffff; color: #333;">
+            ${meeting.area || 'IT'} ${meeting.business_unit ? ` | ${meeting.business_unit}` : ''}
+          </td>
+        </tr>
+        <tr>
+          <td style="background-color: #0b3a42; color: white; font-weight: bold; padding: 10px; border: 1px solid #ccc;">Cliente</td>
+          <td style="padding: 10px; border: 1px solid #ccc; background-color: #ffffff; color: #333;">${meeting.client || 'No especificado'}</td>
+        </tr>
+      </table>
+    `;
+
+    // 2. Action Items Table for PDF
+    const actionItemsTableHTML = `
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-family: Arial, sans-serif; font-size: 13px;">
+        <thead>
+          <tr style="background-color: #0b3a42; color: white; text-align: left;">
+            <th style="padding: 10px; border: 1px solid #ccc; width: 65%;">Acciones</th>
+            <th style="padding: 10px; border: 1px solid #ccc; width: 20%;">Responsable</th>
+            <th style="padding: 10px; border: 1px solid #ccc; width: 15%;">Prioridad</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${meeting.action_items && meeting.action_items.length > 0 ? meeting.action_items.map((a, i) => `
+            <tr style="background-color: ${i % 2 === 0 ? '#ffffff' : '#f9f9f9'};">
+              <td style="padding: 10px; border: 1px solid #ccc; color: #333;">${a.action}</td>
+              <td style="padding: 10px; border: 1px solid #ccc; color: #333; font-weight: 500;">${a.owner || 'No asignado'}</td>
+              <td style="padding: 10px; border: 1px solid #ccc; color: #333; font-weight: 500;">${a.priority || 'Media'}</td>
+            </tr>
+          `).join('') : `
+            <tr>
+              <td colspan="3" style="padding: 10px; border: 1px solid #ccc; text-align: center; color: #666;">No hay acciones registradas.</td>
+            </tr>
+          `}
+        </tbody>
+      </table>
+    `;
+
+    // 3. Signature Block
+    const signatureBlockHTML = `
+      <div style="margin-top: 35px; padding-top: 15px; display: flex; align-items: center; justify-content: flex-start; gap: 20px; font-family: Arial, sans-serif;">
+        <div style="display: flex; align-items: center; justify-content: center; width: 140px;">
+          <img src="${logoUrl}" alt="Atlascore Logo" style="width: 130px; display: block;" crossorigin="anonymous" />
+        </div>
+        <div style="border-left: 2px solid #0b3a42; height: 95px; margin: 0 10px;"></div>
+        <div style="font-size: 12px; color: #333; line-height: 1.5;">
+          <p style="margin: 0; font-weight: bold; font-size: 13px; color: #0b3a42; text-transform: uppercase;">ATLASCORE IT SERVICES S.A.S.</p>
+          <p style="margin: 2px 0;">CUIT: 30-71905817-1</p>
+          <p style="margin: 2px 0;">Matrícula: 44300-A</p>
+          <p style="margin: 2px 0;">Domicilio legal: Córdoba, Argentina</p>
+          <p style="margin: 2px 0;">contacto@atlascore.com.ar</p>
+          <p style="margin: 2px 0; font-weight: bold;"><a href="https://www.atlascore.com.ar" style="color: #207268; text-decoration: none;">www.atlascore.com.ar</a></p>
+        </div>
+      </div>
+    `;
+
+    if (isPdf) {
+      return `
+        <div style="background-color: #ffffff; color: #333; font-family: Arial, sans-serif; line-height: 1.5; font-size: 14px; max-width: 800px; margin: 0 auto;">
+          <style>
+            li, p, div, ul, tr { page-break-inside: avoid; }
+          </style>
+          
+          <!-- PAGE 1 -->
+          <div style="page-break-after: always; padding: 15px; box-sizing: border-box; min-height: 275mm; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              ${headerHTML}
+              
+              <div style="text-align: center; margin-bottom: 25px;">
+                <h1 style="color: #0b3a42; font-size: 22px; font-weight: bold; margin: 0 0 8px 0; font-family: Arial, sans-serif; letter-spacing: 0.5px; text-transform: uppercase;">MINUTA DE REUNIÓN</h1>
+                <h2 style="color: #0b3a42; font-size: 18px; font-weight: normal; margin: 0; font-family: Arial, sans-serif;">${meeting.title}</h2>
+              </div>
+              
+              ${infoTableHTML}
+              
+              ${sectionHeaderHTML('Resumen Ejecutivo')}
+              <p style="text-align: justify; margin-bottom: 20px; font-size: 14px; color: #333; line-height: 1.6;">
+                ${meeting.summary || 'No se especificó resumen.'}
+              </p>
+              
+              ${meeting.topics && meeting.topics.length > 0 ? `
+                ${sectionHeaderHTML('Temas Tratados')}
+                <ul style="padding-left: 20px; margin-bottom: 20px;">
+                  ${meeting.topics.map(t => `<li style="margin-bottom: 6px; color: #333;">${t}</li>`).join('')}
+                </ul>
+              ` : ''}
+              
+              ${meeting.decisions && meeting.decisions.length > 0 ? `
+                ${sectionHeaderHTML('Decisiones')}
+                <ul style="padding-left: 20px; margin-bottom: 20px;">
+                  ${meeting.decisions.map(d => `<li style="margin-bottom: 6px; color: #333;">${d}</li>`).join('')}
+                </ul>
+              ` : ''}
+            </div>
+            
+            ${footerHTML(1)}
+          </div>
+          
+          <!-- PAGE 2 -->
+          <div style="padding: 15px; box-sizing: border-box; min-height: 275mm; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              ${headerHTML}
+              
+              ${meeting.risks && meeting.risks.length > 0 ? `
+                ${sectionHeaderHTML('Riesgos')}
+                <ul style="padding-left: 20px; margin-bottom: 25px;">
+                  ${meeting.risks.map(r => `<li style="margin-bottom: 6px; color: #333;">${r}</li>`).join('')}
+                </ul>
+              ` : ''}
+              
+              <div style="text-align: center; margin-top: 30px; margin-bottom: 15px;">
+                <h2 style="color: #0b3a42; font-size: 20px; font-weight: bold; margin: 0; font-family: Arial, sans-serif; letter-spacing: 0.5px;">Plan de Acción</h2>
+              </div>
+              
+              ${actionItemsTableHTML}
+              
+              ${signatureBlockHTML}
+            </div>
+            
+            ${footerHTML(2)}
+          </div>
+          
+        </div>
+      `;
+    } else {
+      return `
+        <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
+          ${headerHTML}
+          
+          <p><strong>Estimados, ¿Cómo se encuentran? ¡Esperamos que muy bien!</strong></p>
+          <p>Ante todo, les agradecemos el tiempo que nos brindaron en la reunión del día <strong>${meeting.date}</strong>. A continuación les compartimos una breve minuta de lo conversado y sus próximos accionables.</p>
+          
+          <div style="border: 1px solid #ccc; padding: 10px; margin: 20px 0; background-color: #f9f9f9; border-radius: 4px;">
+            <strong>Nota:</strong> Por favor siéntanse libres de agregar / modificar cualquier punto en pos de estar 100% sincronizados.
+          </div>
+
+          <div style="background-color: #0b3a42; color: white; padding: 8px 12px; margin-bottom: 10px; font-weight: bold; border-radius: 4px;">
+            Participantes
+          </div>
+          <ul style="padding-left: 20px; margin-bottom: 20px;">
+            ${meeting.client && meeting.client !== 'No especificado en la reunión.' ? `<li><strong>${meeting.client}</strong> [CLIENTE]</li>` : ''}
+            ${meeting.participants ? meeting.participants.split(',').map(p => `<li>${p.trim()}</li>`).join('') : ''}
+          </ul>
+
+          <div style="background-color: #0b3a42; color: white; padding: 8px 12px; margin: 20px 0 10px 0; font-weight: bold; border-radius: 4px;">
+            Temas tratados
+          </div>
+          <ul style="padding-left: 20px; margin-bottom: 20px;">
+            ${meeting.topics ? meeting.topics.map(t => `<li style="margin-bottom: 8px;">${t}</li>`).join('') : '<li>No hay temas específicos.</li>'}
+          </ul>
+
+          <div style="background-color: #0b3a42; color: white; padding: 8px 12px; margin: 20px 0 10px 0; font-weight: bold; border-radius: 4px;">
+            Próximos accionables
+          </div>
+          <ul style="list-style-type: none; padding-left: 0; margin-bottom: 20px;">
+            ${meeting.action_items && meeting.action_items.length > 0 ? meeting.action_items.map(a => `
+              <li style="margin-bottom: 15px; border-left: 3px solid #207268; padding-left: 10px;">
+                <strong>${a.action}</strong>
+                <ul style="list-style-type: circle; margin-top: 5px; padding-left: 20px;">
+                  <li>¿Quién? <strong>${a.owner}</strong></li>
+                  <li>¿Cuándo? ${a.due_date}</li>
+                </ul>
+              </li>
+            `).join('') : '<li>No hay próximos pasos registrados.</li>'}
+          </ul>
+
+          ${meeting.custom_notes ? `
+          <div style="background-color: #0b3a42; color: white; padding: 8px 12px; margin: 20px 0 10px 0; font-weight: bold; border-radius: 4px;">
+            Notas y Comentarios Extra
+          </div>
+          <p style="white-space: pre-wrap;">${meeting.custom_notes}</p>
+          ` : ''}
+
+          <p style="margin-top: 30px;">Desde ya quedamos atentos y agradecidos del feedback que nos puedan dar al respecto. Ante cualquier consulta o comentario, estamos a disposición.</p>
+
+          <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; display: flex; align-items: center; gap: 20px;">
+            <div>
+              <img src="${logoUrl}" alt="Atlascore Logo" style="height: 50px; display: block;" crossorigin="anonymous" />
+            </div>
+            <div style="border-left: 2px solid #0b3a42; padding-left: 20px;">
+              <p style="margin: 0; font-weight: bold; font-size: 14px; color: #0b3a42;">${name}</p>
+              <p style="margin: 2px 0; font-size: 12px; color: #666;">| Atlascore | <a href="https://www.atlascore.com.ar" style="color: #207268; text-decoration: none;">www.atlascore.com.ar</a></p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
   };
 
   const getStandardText = () => {
@@ -262,7 +415,7 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="card" style={{ maxWidth: '400px', width: '100%', padding: '2rem' }}>
             <h3 style={{ marginBottom: '1rem' }}>Firma de Minuta</h3>
-            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>Por favor ingresa tu nombre completo para la firma Estilo Algeiba IT.</p>
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>Por favor ingresa tu nombre completo para la firma Estilo Algeiba.</p>
             <form onSubmit={handleModalSubmit}>
               <input 
                 type="text" 
