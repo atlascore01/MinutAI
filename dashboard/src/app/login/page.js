@@ -26,7 +26,7 @@ export default function LoginPage() {
     <div className="login-wrapper">
       <div style={{ maxWidth: '350px', width: '100%', padding: '1.5rem' }} className="card">
         <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-          <img src="/logo%20(2).png" alt="MinutAI Logo" style={{ height: '90px', objectFit: 'contain' }} />
+          <img src="/logonuevo.png" alt="Atlascore Logo" style={{ height: '90px', objectFit: 'contain' }} />
         </div>
         <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.5rem' }}>
           Iniciar Sesión

@@ -11,7 +11,7 @@ function Navbar() {
   return (
     <header className="header" style={{ padding: '0.5rem 2rem' }}>
       <Link href="/" className="logo">
-        <img src="/logo%20(2).png" alt="MinutAI Logo" style={{ height: '55px', objectFit: 'contain' }} />
+        <img src="/logonuevo.png" alt="Atlascore Logo" style={{ height: '55px', objectFit: 'contain' }} />
       </Link>
       <nav style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
         {user ? (
