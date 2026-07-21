@@ -29,7 +29,9 @@ async function initDB() {
         agreements JSONB,
         decisions JSONB,
         risks JSONB,
+        custom_notes TEXT,
         raw_text TEXT,
+        file_url VARCHAR(1000),
         style VARCHAR(50),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -48,6 +50,16 @@ async function initDB() {
         END;
         BEGIN
             ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'USER';
+        EXCEPTION
+            WHEN duplicate_column THEN null;
+        END;
+        BEGIN
+            ALTER TABLE meetings ADD COLUMN custom_notes TEXT;
+        EXCEPTION
+            WHEN duplicate_column THEN null;
+        END;
+        BEGIN
+            ALTER TABLE meetings ADD COLUMN file_url VARCHAR(1000);
         EXCEPTION
             WHEN duplicate_column THEN null;
         END;
