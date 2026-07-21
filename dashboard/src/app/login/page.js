@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function LoginPage() {
@@ -9,16 +10,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [area, setArea] = useState('IT');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     
     try {
       await login(username, password);
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión');
+      setLoading(false);
     }
   };
 
@@ -63,8 +67,20 @@ export default function LoginPage() {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.8rem', marginTop: '0.5rem', fontSize: '1rem' }}>
-            Ingresar
+          <button 
+            type="submit" 
+            className="btn btn-primary" 
+            style={{ width: '100%', padding: '0.8rem', marginTop: '0.5rem', fontSize: '1rem' }}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="spinner" size={18} />
+                Ingresando...
+              </>
+            ) : (
+              'Ingresar'
+            )}
           </button>
         </form>
       </div>

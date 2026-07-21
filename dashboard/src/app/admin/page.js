@@ -18,6 +18,8 @@ export default function AdminPage() {
   const [area, setArea] = useState('IT');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (loading) return;
@@ -94,6 +96,12 @@ export default function AdminPage() {
 
   if (loading || fetching) return <div style={{ textAlign: 'center', padding: '4rem' }}>Cargando panel de administración...</div>;
 
+  const filteredUsers = users.filter(u => 
+    u.username.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    u.area.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.role.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
@@ -111,7 +119,7 @@ export default function AdminPage() {
           
           {error && <div style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>{error}</div>}
           {success && <div style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>{success}</div>}
-
+ 
           <form onSubmit={handleRegister}>
             <div className="input-group">
               <label>Usuario</label>
@@ -137,7 +145,17 @@ export default function AdminPage() {
 
         {/* Lista de Usuarios */}
         <div className="card">
-          <h2 style={{ marginBottom: '1.5rem', fontSize: '1.2rem' }}>Usuarios Registrados</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: 0 }}>Usuarios Registrados</h2>
+            <input 
+              type="text" 
+              className="input" 
+              placeholder="Buscar usuario..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ maxWidth: '200px', padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+            />
+          </div>
           <div className="table-container">
             <table>
               <thead>
@@ -150,7 +168,7 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map(u => (
+                {filteredUsers.map(u => (
                   <tr key={u.id}>
                     <td>{u.id}</td>
                     <td style={{ fontWeight: '500', color: 'white' }}>{u.username}</td>
@@ -165,9 +183,11 @@ export default function AdminPage() {
                     </td>
                   </tr>
                 ))}
-                {users.length === 0 && (
+                {filteredUsers.length === 0 && (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>No hay usuarios</td>
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>
+                      {users.length === 0 ? 'No hay usuarios' : 'No se encontraron usuarios coincidentes'}
+                    </td>
                   </tr>
                 )}
               </tbody>
