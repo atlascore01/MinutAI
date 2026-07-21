@@ -350,3 +350,30 @@ tr:hover td {
     font-size: 2rem;
   }
 }
+
+/* Admin Panel Grid & Table Override */
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+  width: 100%;
+}
+
+.admin-table {
+  display: table !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+  table-layout: auto !important;
+}
+
+.admin-table th, .admin-table td {
+  min-width: auto !important;
+  white-space: nowrap !important;
+  padding: 0.75rem 1rem !important;
+}
+
+@media (max-width: 900px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+}

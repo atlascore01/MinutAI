@@ -109,7 +109,7 @@ export default function AdminPage() {
         <h1>Gestión de Usuarios</h1>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
+      <div className="admin-grid">
         
         {/* Formulario de Alta */}
         <div className="card" style={{ alignSelf: 'start' }}>
@@ -157,7 +157,7 @@ export default function AdminPage() {
             />
           </div>
           <div className="table-container">
-            <table>
+            <table className="admin-table">
               <thead>
                 <tr>
                   <th>ID</th>
