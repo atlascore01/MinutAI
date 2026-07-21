@@ -76,29 +76,30 @@ export default function MeetingPage() {
     const areaColor = '#0b3a42'; // Dark teal used in the design
     const accentColor = '#207268'; // Teal used for headers
     const headerBg = 'linear-gradient(90deg, #093c42 0%, #0d555d 70%, #68b89e 100%)';
-    const logoUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/logonuevo.png`;
+    const headerLogoUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/logo%20full%20white.png`;
+    const signatureLogoUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/atlascore_firma.png`;
 
     const headerHTML = `
       <div style="background: ${headerBg}; padding: 12px 24px; display: flex; align-items: center; border-bottom: 3px solid #207268; margin-bottom: 20px; border-radius: 4px 4px 0 0;">
-        <img src="${logoUrl}" alt="Atlascore Logo" style="height: 28px; display: block;" crossorigin="anonymous" />
+        <img src="${headerLogoUrl}" alt="Atlascore Logo" style="height: 32px; display: block;" crossorigin="anonymous" />
       </div>
     `;
 
     const footerHTML = (pageNum) => `
-      <div style="margin-top: 30px; border-top: 1px solid #ccc; padding-top: 8px; display: flex; justify-content: flex-end; font-family: Arial, sans-serif; font-size: 11px; color: #666;">
+      <div style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 8px; display: flex; justify-content: flex-end; font-family: Arial, sans-serif; font-size: 11px; color: #666;">
         <span>Atlascore - Minuta | Página ${pageNum}</span>
       </div>
     `;
 
     const sectionHeaderHTML = (title) => `
-      <div style="background-color: #e9f7f5; border: 1px solid #a3dacf; border-radius: 4px; padding: 8px 12px; margin-top: 20px; margin-bottom: 12px;">
+      <div style="background-color: #e9f7f5; border: 1px solid #a3dacf; border-radius: 4px; padding: 8px 12px; margin-top: 15px; margin-bottom: 12px;">
         <h3 style="color: #1d6d63; margin: 0; font-size: 15px; font-weight: bold; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">${title}</h3>
       </div>
     `;
 
     // 1. Metadata Info Table
     const infoTableHTML = `
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-family: Arial, sans-serif; font-size: 14px;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: Arial, sans-serif; font-size: 14px;">
         <tr style="border-bottom: 1px solid #ccc;">
           <td style="background-color: #0b3a42; color: white; font-weight: bold; padding: 10px; width: 25%; border: 1px solid #ccc;">Fecha</td>
           <td style="padding: 10px; border: 1px solid #ccc; background-color: #ffffff; color: #333;">${meeting.date}</td>
@@ -148,12 +149,12 @@ export default function MeetingPage() {
 
     // 3. Signature Block
     const signatureBlockHTML = `
-      <div style="margin-top: 35px; padding-top: 15px; display: flex; align-items: center; justify-content: flex-start; gap: 20px; font-family: Arial, sans-serif;">
+      <div style="margin: 25px auto 0 auto; padding-top: 15px; display: flex; align-items: center; justify-content: center; gap: 20px; font-family: Arial, sans-serif; max-width: 600px;">
         <div style="display: flex; align-items: center; justify-content: center; width: 140px;">
-          <img src="${logoUrl}" alt="Atlascore Logo" style="width: 130px; display: block;" crossorigin="anonymous" />
+          <img src="${signatureLogoUrl}" alt="Atlascore Logo" style="width: 110px; display: block;" crossorigin="anonymous" />
         </div>
         <div style="border-left: 2px solid #0b3a42; height: 95px; margin: 0 10px;"></div>
-        <div style="font-size: 12px; color: #333; line-height: 1.5;">
+        <div style="font-size: 12px; color: #333; line-height: 1.5; text-align: left;">
           <p style="margin: 0; font-weight: bold; font-size: 13px; color: #0b3a42; text-transform: uppercase;">ATLASCORE IT SERVICES S.A.S.</p>
           <p style="margin: 2px 0;">CUIT: 30-71905817-1</p>
           <p style="margin: 2px 0;">Matrícula: 44300-A</p>
@@ -166,17 +167,17 @@ export default function MeetingPage() {
 
     if (isPdf) {
       return `
-        <div style="background-color: #ffffff; color: #333; font-family: Arial, sans-serif; line-height: 1.5; font-size: 14px; max-width: 800px; margin: 0 auto;">
+        <div style="background-color: #f4f6f8; color: #333; font-family: Arial, sans-serif; line-height: 1.5; font-size: 14px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
           <style>
             li, p, div, ul, tr { page-break-inside: avoid; }
           </style>
           
           <!-- PAGE 1 -->
-          <div style="page-break-after: always; padding: 15px; box-sizing: border-box; min-height: 275mm; display: flex; flex-direction: column; justify-content: space-between;">
+          <div style="page-break-after: always; padding: 15mm; box-sizing: border-box; height: 296mm; display: flex; flex-direction: column; justify-content: space-between; background-color: #f4f6f8;">
             <div>
               ${headerHTML}
               
-              <div style="text-align: center; margin-bottom: 25px;">
+              <div style="text-align: center; margin-bottom: 20px;">
                 <h1 style="color: #0b3a42; font-size: 22px; font-weight: bold; margin: 0 0 8px 0; font-family: Arial, sans-serif; letter-spacing: 0.5px; text-transform: uppercase;">MINUTA DE REUNIÓN</h1>
                 <h2 style="color: #0b3a42; font-size: 18px; font-weight: normal; margin: 0; font-family: Arial, sans-serif;">${meeting.title}</h2>
               </div>
@@ -184,20 +185,20 @@ export default function MeetingPage() {
               ${infoTableHTML}
               
               ${sectionHeaderHTML('Resumen Ejecutivo')}
-              <p style="text-align: justify; margin-bottom: 20px; font-size: 14px; color: #333; line-height: 1.6;">
+              <p style="text-align: justify; margin-bottom: 15px; font-size: 14px; color: #333; line-height: 1.6;">
                 ${meeting.summary || 'No se especificó resumen.'}
               </p>
               
               ${meeting.topics && meeting.topics.length > 0 ? `
                 ${sectionHeaderHTML('Temas Tratados')}
-                <ul style="padding-left: 20px; margin-bottom: 20px;">
+                <ul style="padding-left: 20px; margin-bottom: 15px;">
                   ${meeting.topics.map(t => `<li style="margin-bottom: 6px; color: #333;">${t}</li>`).join('')}
                 </ul>
               ` : ''}
               
               ${meeting.decisions && meeting.decisions.length > 0 ? `
                 ${sectionHeaderHTML('Decisiones')}
-                <ul style="padding-left: 20px; margin-bottom: 20px;">
+                <ul style="padding-left: 20px; margin-bottom: 15px;">
                   ${meeting.decisions.map(d => `<li style="margin-bottom: 6px; color: #333;">${d}</li>`).join('')}
                 </ul>
               ` : ''}
@@ -207,18 +208,18 @@ export default function MeetingPage() {
           </div>
           
           <!-- PAGE 2 -->
-          <div style="padding: 15px; box-sizing: border-box; min-height: 275mm; display: flex; flex-direction: column; justify-content: space-between;">
+          <div style="padding: 15mm; box-sizing: border-box; height: 296mm; display: flex; flex-direction: column; justify-content: space-between; background-color: #f4f6f8;">
             <div>
               ${headerHTML}
               
               ${meeting.risks && meeting.risks.length > 0 ? `
                 ${sectionHeaderHTML('Riesgos')}
-                <ul style="padding-left: 20px; margin-bottom: 25px;">
+                <ul style="padding-left: 20px; margin-bottom: 20px;">
                   ${meeting.risks.map(r => `<li style="margin-bottom: 6px; color: #333;">${r}</li>`).join('')}
                 </ul>
               ` : ''}
               
-              <div style="text-align: center; margin-top: 30px; margin-bottom: 15px;">
+              <div style="text-align: center; margin-top: 20px; margin-bottom: 15px;">
                 <h2 style="color: #0b3a42; font-size: 20px; font-weight: bold; margin: 0; font-family: Arial, sans-serif; letter-spacing: 0.5px;">Plan de Acción</h2>
               </div>
               
@@ -234,13 +235,13 @@ export default function MeetingPage() {
       `;
     } else {
       return `
-        <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f4f6f8; border-radius: 8px;">
           ${headerHTML}
           
           <p><strong>Estimados, ¿Cómo se encuentran? ¡Esperamos que muy bien!</strong></p>
           <p>Ante todo, les agradecemos el tiempo que nos brindaron en la reunión del día <strong>${meeting.date}</strong>. A continuación les compartimos una breve minuta de lo conversado y sus próximos accionables.</p>
           
-          <div style="border: 1px solid #ccc; padding: 10px; margin: 20px 0; background-color: #f9f9f9; border-radius: 4px;">
+          <div style="border: 1px solid #ccc; padding: 10px; margin: 20px 0; background-color: #ffffff; border-radius: 4px;">
             <strong>Nota:</strong> Por favor siéntanse libres de agregar / modificar cualquier punto en pos de estar 100% sincronizados.
           </div>
 
@@ -283,11 +284,11 @@ export default function MeetingPage() {
 
           <p style="margin-top: 30px;">Desde ya quedamos atentos y agradecidos del feedback que nos puedan dar al respecto. Ante cualquier consulta o comentario, estamos a disposición.</p>
 
-          <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; display: flex; align-items: center; gap: 20px;">
+          <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; display: flex; align-items: center; justify-content: center; gap: 20px;">
             <div>
-              <img src="${logoUrl}" alt="Atlascore Logo" style="height: 50px; display: block;" crossorigin="anonymous" />
+              <img src="${signatureLogoUrl}" alt="Atlascore Logo" style="height: 50px; display: block;" crossorigin="anonymous" />
             </div>
-            <div style="border-left: 2px solid #0b3a42; padding-left: 20px;">
+            <div style="border-left: 2px solid #0b3a42; padding-left: 20px; text-align: left;">
               <p style="margin: 0; font-weight: bold; font-size: 14px; color: #0b3a42;">${name}</p>
               <p style="margin: 2px 0; font-size: 12px; color: #666;">| Atlascore | <a href="https://www.atlascore.com.ar" style="color: #207268; text-decoration: none;">www.atlascore.com.ar</a></p>
             </div>
@@ -356,10 +357,10 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
       
       let element;
       let opt = {
-        margin:       10,
+        margin:       0,
         filename:     `Minuta_${meeting.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
