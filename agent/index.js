@@ -9,6 +9,7 @@ const { processMeetingContent } = require('./ai');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const { put, del } = require('@vercel/blob');
+const { startDiscordBot } = require('./discord_bot');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -273,4 +274,5 @@ app.put('/api/minutes/:id', async (req, res) => {
 
 app.listen(port, () => {
   console.log(`Agent API running on port ${port}`);
+  startDiscordBot();
 });
