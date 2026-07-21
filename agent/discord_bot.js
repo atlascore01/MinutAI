@@ -1,14 +1,22 @@
 const { Client, GatewayIntentBits } = require('discord.js');
-const { joinVoiceChannel, getVoiceConnection, EndBehaviorType } = require('@discordjs/voice');
+const { joinVoiceChannel, getVoiceConnection, EndBehaviorType, createAudioPlayer, createAudioResource, StreamType } = require('@discordjs/voice');
 const prism = require('prism-media');
 const fs = require('fs');
 const path = require('path');
+const { Readable } = require('stream');
 const Groq = require('groq-sdk');
 const db = require('./db');
 const { processMeetingContent } = require('./ai');
 
 // Initialize Groq Client
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+// Class to generate silence audio frames (necessary to kickstart Discord audio reception)
+class Silence extends Readable {
+  _read() {
+    this.push(Buffer.from([0xF8, 0xFF, 0xFE])); // 1 silent Opus frame
+  }
+}
 
 // Initialize Discord Client
 const client = new Client({
@@ -88,6 +96,13 @@ client.on('messageCreate', async (message) => {
         selfDeaf: false,
         selfMute: false
       });
+
+      // Play a silence stream to kickstart Discord audio packet transmission (required by Discord voice servers)
+      const player = createAudioPlayer();
+      const silenceStream = new Silence();
+      const resource = createAudioResource(silenceStream, { inputType: StreamType.Opus });
+      player.play(resource);
+      connection.subscribe(player);
 
       const recording = {
         connection,

@@ -25,12 +25,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'minutai_secret_key';
 
 const authMiddleware = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
-  if (token) {
-    try {
-      req.user = jwt.verify(token, JWT_SECRET);
-    } catch (err) {}
+  if (!token) {
+    return res.status(401).json({ error: 'No se proporcionó token de autenticación' });
   }
-  next();
+  try {
+    req.user = jwt.verify(token, JWT_SECRET);
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Token inválido o expirado' });
+  }
 };
 
 const adminMiddleware = (req, res, next) => {
