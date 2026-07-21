@@ -115,6 +115,15 @@ client.on('messageCreate', async (message) => {
 
       activeRecordings.set(guildId, recording);
 
+      // Listen to connection state changes (useful for debugging network/UDP issues)
+      connection.on('stateChange', (oldState, newState) => {
+        console.log(`🔊 [Voice Conn] State change: ${oldState.status} -> ${newState.status}`);
+      });
+
+      connection.on('error', (error) => {
+        console.error(`❌ [Voice Conn Error] Connection error:`, error.message);
+      });
+
       // Listen to voice receiver streams
       const receiver = connection.receiver;
 
