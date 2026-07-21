@@ -64,7 +64,7 @@ export default function MeetingPage() {
       executeCopy();
       return;
     }
-    if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba')) {
+    if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba') || meeting?.style?.startsWith('Estilo Atlascore')) {
       setActionType(type);
       setShowNameModal(true);
     } else {
@@ -328,7 +328,7 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
     if (!meeting) return;
     
     let emailContent = '';
-    if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba')) {
+    if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba') || meeting?.style?.startsWith('Estilo Atlascore')) {
       const html = getItStyleHTML('', false);
       
       const blobHtml = new Blob([html], { type: 'text/html' });
@@ -363,7 +363,7 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
-      if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba')) {
+      if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba') || meeting?.style?.startsWith('Estilo Atlascore')) {
         element = document.createElement('div');
         element.innerHTML = getItStyleHTML(itName, true);
       } else {
@@ -415,7 +415,7 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="card" style={{ maxWidth: '400px', width: '100%', padding: '2rem' }}>
             <h3 style={{ marginBottom: '1rem' }}>Firma de Minuta</h3>
-            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>Por favor ingresa tu nombre completo para la firma Estilo Algeiba.</p>
+            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>Por favor ingresa tu nombre completo para la firma Estilo Atlascore.</p>
             <form onSubmit={handleModalSubmit}>
               <input 
                 type="text" 

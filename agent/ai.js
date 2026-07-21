@@ -49,8 +49,8 @@ async function processMeetingContent(content, style = 'Operativo Profesional') {
     stylePrompt = "Estilo: RRHH. Lenguaje institucional, claro, orientado a personas.";
   } else if (style === 'Comercial') {
     stylePrompt = "Estilo: Comercial. Lenguaje profesional, consultivo, orientado a valor.";
-  } else if (style && style.startsWith('Estilo Algeiba')) {
-    stylePrompt = "Estilo: Algeiba Corporativo. Lenguaje sumamente profesional, orientado a servicios corporativos. Generar un asunto de correo apropiado para envío de minuta a clientes.";
+  } else if (style && (style.startsWith('Estilo Algeiba') || style.startsWith('Estilo Atlascore'))) {
+    stylePrompt = "Estilo: Atlascore Corporativo. Lenguaje sumamente profesional, orientado a servicios corporativos. Generar un asunto de correo apropiado para envío de minuta a clientes.";
   } else {
     stylePrompt = "Estilo: Operativo Profesional.";
   }
@@ -69,7 +69,7 @@ ${content}
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const model = genAI.getGenerativeModel({ 
-        model: 'gemini-1.5-flash',
+        model: 'gemini-3.5-flash',
         systemInstruction: SYSTEM_PROMPT,
       });
 
