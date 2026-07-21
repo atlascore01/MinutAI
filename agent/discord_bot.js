@@ -131,6 +131,8 @@ client.on('messageCreate', async (message) => {
           if (user) username = user.username;
         }
 
+        console.log(`🔊 [Voice Receive] User ${username} (${userId}) started speaking. Capturing audio...`);
+
         const timestamp = Date.now();
         const tempDir = path.join(__dirname, 'temp_audio');
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
@@ -158,6 +160,7 @@ client.on('messageCreate', async (message) => {
           try {
             if (fs.existsSync(pcmPath)) {
               const pcmData = fs.readFileSync(pcmPath);
+              console.log(`💾 [Voice Closed] User ${username} finished speaking. Captured ${pcmData.length} bytes.`);
               // Only save clips with actual audio content (more than 1000 bytes)
               if (pcmData.length > 2000) {
                 const wavHeader = getWavHeader(pcmData.length);
@@ -168,8 +171,13 @@ client.on('messageCreate', async (message) => {
                   username,
                   timestamp
                 });
+                console.log(`✅ [Clip Saved] Saved WAV file for ${username}: ${wavPath}`);
+              } else {
+                console.log(`⚠️ [Clip Discarded] Audio too short or silent (${pcmData.length} bytes) for ${username}`);
               }
               fs.unlinkSync(pcmPath);
+            } else {
+              console.log(`❌ [PCM Missing] PCM temp file not found on close for ${username}`);
             }
           } catch (err) {
             console.error('Error writing WAV clip:', err);
