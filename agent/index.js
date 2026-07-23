@@ -195,7 +195,7 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
       }
     }
 
-    res.json({ id: meetingId, ...aiResult });
+    res.json({ ...aiResult, id: meetingId });
 
   } catch (error) {
     console.error(error);
