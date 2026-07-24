@@ -143,6 +143,25 @@ app.put('/api/profile', authMiddleware, async (req, res) => {
   }
 });
 
+app.post('/api/upload_avatar', authMiddleware, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    
+    const blobOptions = {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN
+    };
+    
+    const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const blobResult = await put(`avatars/${Date.now()}_${safeName}`, req.file.buffer, blobOptions);
+    
+    res.json({ url: blobResult.url });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error uploading avatar' });
+  }
+});
+
 app.get('/api/users', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { rows } = await db.query('SELECT id, username, full_name, profile_picture_url, area, role, password_changed, pwd_issued_at, created_at FROM users ORDER BY created_at DESC');

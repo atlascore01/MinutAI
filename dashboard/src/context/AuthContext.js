@@ -58,8 +58,13 @@ export function AuthProvider({ children }) {
     router.push('/login');
   };
 
+  const updateUser = (token, newUser) => {
+    localStorage.setItem('minutai_token', token);
+    setUser(newUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

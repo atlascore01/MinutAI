@@ -1,21 +1,22 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { User, Lock, Upload, Save, CheckCircle, AlertTriangle } from 'lucide-react';
+import { User, Lock, Upload, Save, CheckCircle, AlertTriangle, Camera } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ProfilePage() {
-  const { user, login } = useAuth();
+  const { user, updateUser } = useAuth();
   const router = useRouter();
+  const fileInputRef = useRef(null);
 
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // To handle file upload for avatar (optional for this implementation, we could just use a URL input for now, but I'll use standard file)
   const [profilePic, setProfilePic] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,8 +25,17 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       setFullName(user.full_name || '');
+      setPreviewUrl(user.profile_picture_url || '');
     }
   }, [user]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePic(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
 
   if (!user) {
     return <div style={{ textAlign: 'center', padding: '4rem' }}>Cargando perfil...</div>;
@@ -53,12 +63,15 @@ export default function ProfilePage() {
         const formData = new FormData();
         formData.append('file', profilePic);
         
-        // In a real app we would use an upload endpoint. For simplicity here, we assume Vercel Blob or similar is configured. 
-        // We'll just reuse the `/api/process` logic if we had one for files, but since we don't have a specific file upload endpoint for images,
-        // we might just leave the image upload as a URL input for now, or use a custom endpoint.
-        // Wait, the prompt says "Vercel Blob". But I didn't create a backend route for `/api/upload_avatar`.
-        // Let's assume we just pass a URL for now, or if it fails, it fails.
-        // Actually, to make it robust, I'll let them paste a URL for the photo.
+        const uploadRes = await fetch(`${apiUrl}/api/upload_avatar`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+        
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) throw new Error(uploadData.error || 'Error al subir imagen');
+        uploadedUrl = uploadData.url;
       }
 
       const res = await fetch(`${apiUrl}/api/profile`, {
@@ -79,12 +92,13 @@ export default function ProfilePage() {
 
       // Update auth context with new token
       if (data.token && data.user) {
-        login(data.token, data.user);
+        updateUser(data.token, data.user);
       }
 
       setSuccess('Perfil actualizado correctamente.');
       setPassword('');
       setConfirmPassword('');
+      setProfilePic(null);
       
     } catch (err) {
       setError(err.message || 'Error al actualizar perfil');
@@ -96,17 +110,32 @@ export default function ProfilePage() {
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem 0' }}>
       <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ 
-          width: '60px', height: '60px', borderRadius: '50%', 
-          background: 'var(--accent-color)', color: '#fff',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '24px', fontWeight: 'bold', overflow: 'hidden'
-        }}>
-          {user.profile_picture_url ? (
-            <img src={user.profile_picture_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <input 
+          type="file" 
+          accept="image/*" 
+          ref={fileInputRef} 
+          style={{ display: 'none' }} 
+          onChange={handleFileChange} 
+        />
+        <div 
+          onClick={() => fileInputRef.current.click()}
+          style={{ 
+            width: '80px', height: '80px', borderRadius: '50%', 
+            background: 'var(--accent-color)', color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '32px', fontWeight: 'bold', overflow: 'hidden',
+            cursor: 'pointer', position: 'relative'
+          }}
+          title="Cambiar foto de perfil"
+        >
+          {previewUrl ? (
+            <img src={previewUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
             (user.full_name || user.username).charAt(0).toUpperCase()
           )}
+          <div style={{ position: 'absolute', bottom: 0, background: 'rgba(0,0,0,0.5)', width: '100%', height: '30%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <Camera size={14} color="#fff" />
+          </div>
         </div>
         <div>
           <h1 style={{ margin: 0, fontSize: '1.8rem' }}>Mi Perfil</h1>
