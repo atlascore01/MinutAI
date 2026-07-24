@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "file-saver": "^2.0.5",
+    "html-docx-js-typescript": "^0.1.5",
     "html2pdf.js": "^0.14.0",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^1.17.0",

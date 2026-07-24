@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { Calendar, Users, Briefcase, MapPin, Copy, Mail, AlertTriangle, CheckCircle, Target, BookOpen, Download, FileText } from 'lucide-react';
+import { Calendar, Users, Briefcase, MapPin, Copy, Mail, AlertTriangle, CheckCircle, Target, BookOpen, Download, FileText, File } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { asBlob } from 'html-docx-js-typescript';
+import { saveAs } from 'file-saver';
 
 export default function MeetingPage() {
   const { id } = useParams();
@@ -68,7 +70,165 @@ export default function MeetingPage() {
     if (type === 'copy') {
       executeCopy();
     } else if (type === 'pdf') {
-      executePdf();
+      if (meeting?.style?.includes('Atlascore') && !itName && user?.area === 'IT') {
+        setActionType('pdf');
+        setShowNameModal(true);
+      } else {
+        executePdf();
+      }
+    } else if (type === 'docx') {
+      if (meeting?.style?.includes('Atlascore') && !itName && user?.area === 'IT') {
+        setActionType('docx');
+        setShowNameModal(true);
+      } else {
+        executeDocx();
+      }
+    }
+  };
+
+  const getGenericStyleHTML = (isPdf = false) => {
+    const headerHTML = `
+      <div style="background: #ffffff; padding: 12px 24px; display: flex; align-items: center; border-bottom: 2px solid #ccc; margin-bottom: 20px;">
+        <h2 style="margin: 0; color: #333; font-family: Arial, sans-serif;">Minuta de Reunión</h2>
+      </div>
+    `;
+
+    const footerHTML = (pageNum) => `
+      <div style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 8px; display: flex; justify-content: flex-end; font-family: Arial, sans-serif; font-size: 11px; color: #666;">
+        <span>Página ${pageNum}</span>
+      </div>
+    `;
+
+    const sectionHeaderHTML = (title) => `
+      <div style="background-color: #f0f0f0; border-left: 4px solid #666; padding: 8px 12px; margin-top: 15px; margin-bottom: 12px;">
+        <h3 style="color: #333; margin: 0; font-size: 15px; font-weight: bold; font-family: Arial, sans-serif; text-transform: uppercase;">${title}</h3>
+      </div>
+    `;
+
+    const infoTableHTML = `
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: Arial, sans-serif; font-size: 14px;">
+        <tr style="border-bottom: 1px solid #ccc;">
+          <td style="background-color: #f9f9f9; color: #333; font-weight: bold; padding: 10px; width: 25%; border: 1px solid #ddd;">Fecha</td>
+          <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${meeting.date}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #ccc;">
+          <td style="background-color: #f9f9f9; color: #333; font-weight: bold; padding: 10px; border: 1px solid #ddd;">Participantes</td>
+          <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${meeting.participants || 'No especificados'}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #ccc;">
+          <td style="background-color: #f9f9f9; color: #333; font-weight: bold; padding: 10px; border: 1px solid #ddd;">Área / Rol</td>
+          <td style="padding: 10px; border: 1px solid #ddd; color: #333;">
+            ${meeting.area || 'General'} ${meeting.business_unit ? ` | ${meeting.business_unit}` : ''}
+          </td>
+        </tr>
+        <tr>
+          <td style="background-color: #f9f9f9; color: #333; font-weight: bold; padding: 10px; border: 1px solid #ddd;">Cliente</td>
+          <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${meeting.client || 'No especificado'}</td>
+        </tr>
+      </table>
+    `;
+
+    const actionItemsTableHTML = `
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-family: Arial, sans-serif; font-size: 13px;">
+        <thead>
+          <tr style="background-color: #f0f0f0; color: #333; text-align: left;">
+            <th style="padding: 10px; border: 1px solid #ddd; width: 65%;">Acciones</th>
+            <th style="padding: 10px; border: 1px solid #ddd; width: 20%;">Responsable</th>
+            <th style="padding: 10px; border: 1px solid #ddd; width: 15%;">Prioridad</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${meeting.action_items && meeting.action_items.length > 0 ? meeting.action_items.map((a, i) => `
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${a.action}</td>
+              <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${a.owner || 'No asignado'}</td>
+              <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${a.priority || 'Media'}</td>
+            </tr>
+          `).join('') : `
+            <tr>
+              <td colspan="3" style="padding: 10px; border: 1px solid #ddd; text-align: center; color: #666;">No hay acciones registradas.</td>
+            </tr>
+          `}
+        </tbody>
+      </table>
+    `;
+
+    if (isPdf) {
+      return `
+        <div style="background-color: #ffffff; color: #333; font-family: Arial, sans-serif; line-height: 1.5; font-size: 14px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
+          <style>li, p, div, ul, tr { page-break-inside: avoid; }</style>
+          <div style="page-break-after: always; padding: 15mm; box-sizing: border-box; height: 296mm; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              ${headerHTML}
+              <div style="text-align: center; margin-bottom: 20px;">
+                <h1 style="color: #333; font-size: 22px; font-weight: bold; margin: 0 0 8px 0; text-transform: uppercase;">MINUTA DE REUNIÓN</h1>
+                <h2 style="color: #666; font-size: 18px; font-weight: normal; margin: 0;">${meeting.title}</h2>
+              </div>
+              ${infoTableHTML}
+              ${sectionHeaderHTML('Resumen Ejecutivo')}
+              <p style="text-align: justify; margin-bottom: 15px; font-size: 14px; line-height: 1.6;">${meeting.summary || 'No se especificó resumen.'}</p>
+              
+              ${meeting.topics && meeting.topics.length > 0 ? `
+                ${sectionHeaderHTML('Temas Tratados')}
+                <ul style="padding-left: 20px; margin-bottom: 15px;">
+                  ${meeting.topics.map(t => `<li style="margin-bottom: 6px;">${t}</li>`).join('')}
+                </ul>
+              ` : ''}
+              
+              ${meeting.decisions && meeting.decisions.length > 0 ? `
+                ${sectionHeaderHTML('Decisiones')}
+                <ul style="padding-left: 20px; margin-bottom: 15px;">
+                  ${meeting.decisions.map(d => `<li style="margin-bottom: 6px;">${d}</li>`).join('')}
+                </ul>
+              ` : ''}
+            </div>
+            ${footerHTML(1)}
+          </div>
+          <div style="padding: 15mm; box-sizing: border-box; height: 296mm; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              ${headerHTML}
+              ${meeting.risks && meeting.risks.length > 0 ? `
+                ${sectionHeaderHTML('Riesgos')}
+                <ul style="padding-left: 20px; margin-bottom: 20px;">
+                  ${meeting.risks.map(r => `<li style="margin-bottom: 6px;">${r}</li>`).join('')}
+                </ul>
+              ` : ''}
+              ${meeting.custom_notes ? `
+                ${sectionHeaderHTML('Notas y Comentarios Extra')}
+                <p style="text-align: justify; margin-bottom: 20px; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${meeting.custom_notes}</p>
+              ` : ''}
+              ${sectionHeaderHTML('Plan de Acción')}
+              ${actionItemsTableHTML}
+            </div>
+            ${footerHTML(2)}
+          </div>
+        </div>
+      `;
+    } else {
+      return `
+        <div style="font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+          ${headerHTML}
+          <p><strong>Estimados,</strong></p>
+          <p>A continuación compartimos la minuta correspondiente a la reunión del día <strong>${meeting.date}</strong>.</p>
+          <br/>
+          ${infoTableHTML}
+          ${sectionHeaderHTML('Resumen Ejecutivo')}
+          <p style="text-align: justify; margin-bottom: 15px;">${meeting.summary}</p>
+          
+          ${sectionHeaderHTML('Temas Tratados')}
+          <ul style="padding-left: 20px; margin-bottom: 15px;">
+            ${meeting.topics ? meeting.topics.map(t => `<li style="margin-bottom: 8px;">${t}</li>`).join('') : '<li>No hay temas específicos.</li>'}
+          </ul>
+          
+          ${sectionHeaderHTML('Plan de Acción')}
+          ${actionItemsTableHTML}
+
+          ${meeting.custom_notes ? `
+          ${sectionHeaderHTML('Notas y Comentarios Extra')}
+          <p style="white-space: pre-wrap;">${meeting.custom_notes}</p>
+          ` : ''}
+        </div>
+      `;
     }
   };
 
@@ -334,25 +494,58 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
     if (!meeting) return;
     
     let emailContent = '';
-    if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba') || meeting?.style?.startsWith('Estilo Atlascore')) {
+    const isAtlascoreStyle = meeting?.style?.includes('Atlascore');
+    
+    if (isAtlascoreStyle) {
       const html = getItStyleHTML('', false);
-      
       const blobHtml = new Blob([html], { type: 'text/html' });
       const blobText = new Blob([getStandardText()], { type: 'text/plain' });
-      const data = [new ClipboardItem({
-        'text/html': blobHtml,
-        'text/plain': blobText,
-      })];
+      const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
       navigator.clipboard.write(data).then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 3000);
       });
       return;
     } else {
-      emailContent = getStandardText();
-      navigator.clipboard.writeText(emailContent);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
+      const html = getGenericStyleHTML(false);
+      const blobHtml = new Blob([html], { type: 'text/html' });
+      const blobText = new Blob([getStandardText()], { type: 'text/plain' });
+      const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
+      navigator.clipboard.write(data).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      });
+      return;
+    }
+  };
+
+  const executeDocx = async () => {
+    if (!meeting) return;
+    const isAtlascoreStyle = meeting?.style?.includes('Atlascore');
+    
+    // We use the email/web layout (isPdf = false) for Docx as it's a single continuous flow
+    const htmlContent = isAtlascoreStyle ? getItStyleHTML(itName, false) : getGenericStyleHTML(false);
+    
+    // Create a full HTML document string
+    const fullHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${meeting.title}</title>
+        </head>
+        <body>
+          ${htmlContent}
+        </body>
+      </html>
+    `;
+
+    try {
+      const docxBlob = await asBlob(fullHtml, { orientation: 'portrait' });
+      saveAs(docxBlob, `Minuta_${meeting.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.docx`);
+    } catch (err) {
+      console.error(err);
+      alert('Error al generar el documento Word. Por favor intente nuevamente.');
     }
   };
 
@@ -369,12 +562,14 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
-      if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba') || meeting?.style?.startsWith('Estilo Atlascore')) {
+      const isAtlascoreStyle = meeting?.style?.includes('Atlascore');
+
+      if (isAtlascoreStyle) {
         element = document.createElement('div');
         element.innerHTML = getItStyleHTML(itName, true);
       } else {
-        element = contentRef.current;
-        opt.html2canvas.backgroundColor = '#1a1a2e'; // dark background for dark mode theme
+        element = document.createElement('div');
+        element.innerHTML = getGenericStyleHTML(true);
       }
 
       html2pdf().set(opt).from(element).save();
@@ -386,6 +581,7 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
     setShowNameModal(false);
     if (actionType === 'copy') executeCopy();
     if (actionType === 'pdf') executePdf();
+    if (actionType === 'docx') executeDocx();
   };
 
   if (loading) return <div style={{ textAlign: 'center', padding: '4rem' }}>Cargando minuta...</div>;
@@ -412,7 +608,10 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
             {copied ? '¡Copiado!' : 'Copiar para Correo'}
           </button>
           <button onClick={() => handleAction('pdf')} className="btn btn-primary" style={{ backgroundColor: areaColor, color: getTextColor(meeting.area) }}>
-            <Download size={18} /> Descargar PDF
+            <FileText size={18} /> PDF
+          </button>
+          <button onClick={() => handleAction('docx')} className="btn btn-primary" style={{ backgroundColor: areaColor, color: getTextColor(meeting.area) }}>
+            <File size={18} /> DOCX
           </button>
         </div>
       </div>
