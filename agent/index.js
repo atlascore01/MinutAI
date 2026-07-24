@@ -77,8 +77,26 @@ app.post('/api/login', async (req, res) => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user.id, username: user.username, area: user.area, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user: { id: user.id, username: user.username, area: user.area, role: user.role } });
+    if (!user.password_changed) {
+      const issuedAt = new Date(user.pwd_issued_at || user.created_at);
+      const diffHours = (new Date() - issuedAt) / (1000 * 60 * 60);
+      if (diffHours > 48) {
+        return res.status(403).json({ error: 'Cuenta suspendida por seguridad. Pasaron 48hs sin cambiar la contraseña provisional. Contacte al administrador.' });
+      }
+    }
+
+    const payload = { 
+      id: user.id, 
+      username: user.username, 
+      area: user.area, 
+      role: user.role,
+      full_name: user.full_name,
+      profile_picture_url: user.profile_picture_url,
+      password_changed: user.password_changed
+    };
+
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ token, user: payload });
   } catch (error) {
     res.status(500).json({ error: 'Server Error: ' + error.message });
   }
@@ -87,10 +105,71 @@ app.post('/api/login', async (req, res) => {
 app.use('/api/process', authMiddleware);
 app.use('/api/minutes', authMiddleware);
 
+app.put('/api/profile', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { full_name, profile_picture_url, password } = req.body;
+    
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await db.query(
+        'UPDATE users SET full_name=$1, profile_picture_url=$2, password=$3, password_changed=TRUE WHERE id=$4',
+        [full_name, profile_picture_url, hashedPassword, userId]
+      );
+    } else {
+      await db.query(
+        'UPDATE users SET full_name=$1, profile_picture_url=$2 WHERE id=$3',
+        [full_name, profile_picture_url, userId]
+      );
+    }
+    
+    // Fetch updated user to return new token
+    const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+    const user = result.rows[0];
+    const payload = { 
+      id: user.id, 
+      username: user.username, 
+      area: user.area, 
+      role: user.role,
+      full_name: user.full_name,
+      profile_picture_url: user.profile_picture_url,
+      password_changed: user.password_changed
+    };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+    
+    res.json({ success: true, token, user: payload });
+  } catch (error) {
+    res.status(500).json({ error: 'Server Error: ' + error.message });
+  }
+});
+
 app.get('/api/users', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT id, username, area, role, created_at FROM users ORDER BY created_at DESC');
+    const { rows } = await db.query('SELECT id, username, full_name, profile_picture_url, area, role, password_changed, pwd_issued_at, created_at FROM users ORDER BY created_at DESC');
     res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Server Error: ' + error.message });
+  }
+});
+
+app.put('/api/users/:id', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, full_name, area, role, resetPassword } = req.body;
+    
+    if (resetPassword) {
+      const hashedPassword = await bcrypt.hash(resetPassword, 10);
+      await db.query(
+        'UPDATE users SET username=$1, full_name=$2, area=$3, role=$4, password=$5, password_changed=FALSE, pwd_issued_at=CURRENT_TIMESTAMP WHERE id=$6',
+        [username, full_name, area, role, hashedPassword, id]
+      );
+    } else {
+      await db.query(
+        'UPDATE users SET username=$1, full_name=$2, area=$3, role=$4 WHERE id=$5',
+        [username, full_name, area, role, id]
+      );
+    }
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Server Error: ' + error.message });
   }

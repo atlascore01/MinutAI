@@ -12,6 +12,10 @@ async function initDB() {
         password VARCHAR(255) NOT NULL,
         area VARCHAR(50) NOT NULL,
         role VARCHAR(50) DEFAULT 'USER',
+        full_name VARCHAR(255),
+        profile_picture_url VARCHAR(1000),
+        password_changed BOOLEAN DEFAULT FALSE,
+        pwd_issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
