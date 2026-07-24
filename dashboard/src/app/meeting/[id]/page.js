@@ -4,8 +4,6 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Calendar, Users, Briefcase, MapPin, Copy, Mail, AlertTriangle, CheckCircle, Target, BookOpen, Download, FileText, File } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { asBlob } from 'html-docx-js-typescript';
-import { saveAs } from 'file-saver';
 
 export default function MeetingPage() {
   const { id } = useParams();
@@ -14,10 +12,7 @@ export default function MeetingPage() {
   const [copied, setCopied] = useState(false);
   const { user } = useAuth();
   
-  const [showNameModal, setShowNameModal] = useState(false);
   const [showResourcesModal, setShowResourcesModal] = useState(false);
-  const [actionType, setActionType] = useState(null); // 'copy' or 'pdf'
-  const [itName, setItName] = useState('');
   
   const contentRef = useRef(null);
 
@@ -70,19 +65,9 @@ export default function MeetingPage() {
     if (type === 'copy') {
       executeCopy();
     } else if (type === 'pdf') {
-      if (meeting?.style?.includes('Atlascore') && !itName && user?.area === 'IT') {
-        setActionType('pdf');
-        setShowNameModal(true);
-      } else {
-        executePdf();
-      }
+      executePdf();
     } else if (type === 'docx') {
-      if (meeting?.style?.includes('Atlascore') && !itName && user?.area === 'IT') {
-        setActionType('docx');
-        setShowNameModal(true);
-      } else {
-        executeDocx();
-      }
+      executeDocx();
     }
   };
 
@@ -241,7 +226,7 @@ export default function MeetingPage() {
 
     const headerHTML = `
       <div style="background: ${headerBg}; padding: 12px 24px; display: flex; align-items: center; border-bottom: 3px solid #207268; margin-bottom: 20px; border-radius: 4px 4px 0 0;">
-        <img src="${headerLogoUrl}" alt="Atlascore Logo" style="height: 32px; display: block;" crossorigin="anonymous" />
+        <img src="${headerLogoUrl}" alt="Atlascore Logo" width="160" height="32" style="display: block;" crossorigin="anonymous" />
       </div>
     `;
 
@@ -307,11 +292,10 @@ export default function MeetingPage() {
       </table>
     `;
 
-    // 3. Signature Block
     const signatureBlockHTML = `
       <div style="margin: 25px auto 0 auto; padding-top: 15px; display: flex; align-items: center; justify-content: center; gap: 20px; font-family: Arial, sans-serif; max-width: 600px;">
         <div style="display: flex; align-items: center; justify-content: center; width: 140px;">
-          <img src="${signatureLogoUrl}" alt="Atlascore Logo" style="width: 110px; display: block;" crossorigin="anonymous" />
+          <img src="${signatureLogoUrl}" alt="Atlascore Logo" width="110" height="110" style="display: block;" crossorigin="anonymous" />
         </div>
         <div style="border-left: 2px solid #0b3a42; height: 95px; margin: 0 10px;"></div>
         <div style="font-size: 12px; color: #333; line-height: 1.5; text-align: left;">
@@ -451,7 +435,7 @@ export default function MeetingPage() {
 
           <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; display: flex; align-items: center; justify-content: center; gap: 20px;">
             <div>
-              <img src="${signatureLogoUrl}" alt="Atlascore Logo" style="height: 50px; display: block;" crossorigin="anonymous" />
+              <img src="${signatureLogoUrl}" alt="Atlascore Logo" width="50" height="50" style="display: block;" crossorigin="anonymous" />
             </div>
             <div style="border-left: 2px solid #0b3a42; padding-left: 20px; text-align: left;">
               <p style="margin: 0; font-weight: bold; font-size: 14px; color: #0b3a42;">${name}</p>
@@ -497,7 +481,7 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
     const isAtlascoreStyle = meeting?.style?.includes('Atlascore');
     
     if (isAtlascoreStyle) {
-      const html = getItStyleHTML('', false);
+      const html = getItStyleHTML(user?.full_name || '', false);
       const blobHtml = new Blob([html], { type: 'text/html' });
       const blobText = new Blob([getStandardText()], { type: 'text/plain' });
       const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
@@ -523,10 +507,9 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
     if (!meeting) return;
     const isAtlascoreStyle = meeting?.style?.includes('Atlascore');
     
-    // We use the email/web layout (isPdf = false) for Docx as it's a single continuous flow
-    const htmlContent = isAtlascoreStyle ? getItStyleHTML(itName, false) : getGenericStyleHTML(false);
+    // Use the email/web layout (isPdf = false) as a base, html-to-docx handles the rest
+    const htmlContent = isAtlascoreStyle ? getItStyleHTML(user?.full_name || '', false) : getGenericStyleHTML(false);
     
-    // Create a full HTML document string
     const fullHtml = `
       <!DOCTYPE html>
       <html>
@@ -541,8 +524,31 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
     `;
 
     try {
-      const docxBlob = await asBlob(fullHtml, { orientation: 'portrait' });
-      saveAs(docxBlob, `Minuta_${meeting.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.docx`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const token = localStorage.getItem('minutai_token');
+      
+      const response = await fetch(`${apiUrl}/api/export/docx`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ htmlContent: fullHtml })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error en el servidor al generar DOCX');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Minuta_${meeting.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (err) {
       console.error(err);
       alert('Error al generar el documento Word. Por favor intente nuevamente.');
@@ -566,7 +572,7 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
 
       if (isAtlascoreStyle) {
         element = document.createElement('div');
-        element.innerHTML = getItStyleHTML(itName, true);
+        element.innerHTML = getItStyleHTML(user?.full_name || '', true);
       } else {
         element = document.createElement('div');
         element.innerHTML = getGenericStyleHTML(true);
@@ -574,14 +580,6 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
 
       html2pdf().set(opt).from(element).save();
     }
-  };
-
-  const handleModalSubmit = (e) => {
-    e.preventDefault();
-    setShowNameModal(false);
-    if (actionType === 'copy') executeCopy();
-    if (actionType === 'pdf') executePdf();
-    if (actionType === 'docx') executeDocx();
   };
 
   if (loading) return <div style={{ textAlign: 'center', padding: '4rem' }}>Cargando minuta...</div>;
@@ -615,31 +613,6 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
           </button>
         </div>
       </div>
-
-      {showNameModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="card" style={{ maxWidth: '400px', width: '100%', padding: '2rem' }}>
-            <h3 style={{ marginBottom: '1rem' }}>Firma de Minuta</h3>
-            <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>Por favor ingresa tu nombre completo para la firma Estilo Atlascore.</p>
-            <form onSubmit={handleModalSubmit}>
-              <input 
-                type="text" 
-                className="textarea" 
-                style={{ minHeight: 'auto', padding: '0.8rem', marginBottom: '1.5rem' }}
-                placeholder="Ej. Nicolas Daniel France"
-                value={itName}
-                onChange={(e) => setItName(e.target.value)}
-                required
-                autoFocus
-              />
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowNameModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary" style={{ backgroundColor: areaColor, color: getTextColor(meeting.area) }}>Continuar</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {showResourcesModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
