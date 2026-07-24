@@ -543,22 +543,6 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
   const executeDocx = async () => {
     if (!meeting) return;
     const isAtlascoreStyle = meeting?.style?.includes('Atlascore');
-    
-    // Use the email/web layout (isPdf = false) as a base, html-to-docx handles the rest
-    const htmlContent = isAtlascoreStyle ? getItStyleHTML(user?.full_name || '', false) : getGenericStyleHTML(false);
-    
-    const fullHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>${meeting.title}</title>
-        </head>
-        <body>
-          ${htmlContent}
-        </body>
-      </html>
-    `;
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -570,7 +554,7 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ htmlContent: fullHtml })
+        body: JSON.stringify({ meeting, userName: user?.full_name || '', isAtlascoreStyle })
       });
 
       if (!response.ok) {

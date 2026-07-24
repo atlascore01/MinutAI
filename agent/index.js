@@ -10,7 +10,7 @@ const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const { put, del } = require('@vercel/blob');
 const { startDiscordBot } = require('./discord_bot');
-const HTMLtoDOCX = require('html-to-docx');
+const { generateDocx } = require('./docxGenerator');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -165,18 +165,15 @@ app.post('/api/upload_avatar', authMiddleware, upload.single('file'), async (req
 
 app.post('/api/export/docx', authMiddleware, async (req, res) => {
   try {
-    const { htmlContent } = req.body;
-    if (!htmlContent) return res.status(400).json({ error: 'No htmlContent provided' });
+    const { meeting, userName, isAtlascoreStyle } = req.body;
+    if (!meeting) {
+      return res.status(400).json({ error: 'Falta el objeto meeting' });
+    }
 
-    // Generar DOCX desde HTML usando opciones predeterminadas de html-to-docx
-    const docxBuffer = await HTMLtoDOCX(htmlContent, null, {
-      table: { row: { cantSplit: true } },
-      footer: true,
-      pageNumber: true
-    });
+    const docxBuffer = await generateDocx(meeting, userName, isAtlascoreStyle);
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', 'attachment; filename=Minuta.docx');
+    res.setHeader('Content-Disposition', 'attachment; filename="minuta.docx"');
     res.send(docxBuffer);
   } catch (error) {
     console.error('Error generating DOCX:', error);
