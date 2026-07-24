@@ -5,7 +5,8 @@ const getBase64Data = (dataURI) => dataURI.replace(/^data:image\/\w+;base64,/, '
 
 function createSectionHeader(title, isAtlascoreStyle) {
   return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
+    width: { size: 9000, type: WidthType.DXA },
+    columnWidths: [9000],
     borders: {
       top: { style: BorderStyle.NIL },
       bottom: { style: BorderStyle.NIL },
@@ -62,7 +63,7 @@ function createMetaTable(meeting, isAtlascoreStyle) {
           left: { style: BorderStyle.SINGLE, size: 4, color: borderColor },
           right: { style: BorderStyle.SINGLE, size: 4, color: borderColor },
         },
-        width: { size: 25, type: WidthType.PERCENTAGE },
+        width: { size: 2500, type: WidthType.DXA },
         children: [
           new Paragraph({
             children: [new TextRun({ text: label, bold: true, color: textColor, size: 22 })]
@@ -87,7 +88,8 @@ function createMetaTable(meeting, isAtlascoreStyle) {
   });
 
   return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
+    width: { size: 9000, type: WidthType.DXA },
+    columnWidths: [2500, 6500],
     rows: [
       makeRow('Fecha', meeting.date),
       makeRow('Participantes', meeting.participants),
@@ -109,21 +111,21 @@ function createActionItemsTable(meeting, isAtlascoreStyle) {
         shading: { fill: headerBgColor },
         margins: { top: 100, bottom: 100, left: 100, right: 100 },
         borders: { top: { style: BorderStyle.SINGLE, size: 4, color: borderColor }, bottom: { style: BorderStyle.SINGLE, size: 4, color: borderColor }, left: { style: BorderStyle.SINGLE, size: 4, color: borderColor }, right: { style: BorderStyle.SINGLE, size: 4, color: borderColor } },
-        width: { size: 65, type: WidthType.PERCENTAGE },
+        width: { size: 5500, type: WidthType.DXA },
         children: [new Paragraph({ children: [new TextRun({ text: 'Acciones', bold: true, color: headerTextColor, size: 22 })] })]
       }),
       new TableCell({
         shading: { fill: headerBgColor },
         margins: { top: 100, bottom: 100, left: 100, right: 100 },
         borders: { top: { style: BorderStyle.SINGLE, size: 4, color: borderColor }, bottom: { style: BorderStyle.SINGLE, size: 4, color: borderColor }, left: { style: BorderStyle.SINGLE, size: 4, color: borderColor }, right: { style: BorderStyle.SINGLE, size: 4, color: borderColor } },
-        width: { size: 20, type: WidthType.PERCENTAGE },
+        width: { size: 2000, type: WidthType.DXA },
         children: [new Paragraph({ children: [new TextRun({ text: 'Responsable', bold: true, color: headerTextColor, size: 22 })] })]
       }),
       new TableCell({
         shading: { fill: headerBgColor },
         margins: { top: 100, bottom: 100, left: 100, right: 100 },
         borders: { top: { style: BorderStyle.SINGLE, size: 4, color: borderColor }, bottom: { style: BorderStyle.SINGLE, size: 4, color: borderColor }, left: { style: BorderStyle.SINGLE, size: 4, color: borderColor }, right: { style: BorderStyle.SINGLE, size: 4, color: borderColor } },
-        width: { size: 15, type: WidthType.PERCENTAGE },
+        width: { size: 1500, type: WidthType.DXA },
         children: [new Paragraph({ children: [new TextRun({ text: 'Prioridad', bold: true, color: headerTextColor, size: 22 })] })]
       })
     ]
@@ -171,7 +173,8 @@ function createActionItemsTable(meeting, isAtlascoreStyle) {
   }
 
   return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
+    width: { size: 9000, type: WidthType.DXA },
+    columnWidths: [5500, 2000, 1500],
     rows: rows
   });
 }
@@ -179,14 +182,15 @@ function createActionItemsTable(meeting, isAtlascoreStyle) {
 function createSignatureBlock(userName, isAtlascoreStyle) {
   if (isAtlascoreStyle) {
     return new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
+      width: { size: 9000, type: WidthType.DXA },
+      columnWidths: [2500, 6500],
       borders: { top: { style: BorderStyle.NIL }, bottom: { style: BorderStyle.NIL }, left: { style: BorderStyle.NIL }, right: { style: BorderStyle.NIL } },
       rows: [
         new TableRow({
           children: [
             new TableCell({
               borders: { top: { style: BorderStyle.NIL }, bottom: { style: BorderStyle.NIL }, left: { style: BorderStyle.NIL }, right: { style: BorderStyle.SINGLE, size: 12, color: '0B3A42' } },
-              width: { size: 30, type: WidthType.PERCENTAGE },
+              width: { size: 2500, type: WidthType.DXA },
               margins: { right: 200 },
               children: [
                 new Paragraph({
@@ -218,14 +222,15 @@ function createSignatureBlock(userName, isAtlascoreStyle) {
     });
   } else {
     return new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
+      width: { size: 9000, type: WidthType.DXA },
+      columnWidths: [2000, 7000],
       borders: { top: { style: BorderStyle.SINGLE, size: 4, color: 'CCCCCC' }, bottom: { style: BorderStyle.NIL }, left: { style: BorderStyle.NIL }, right: { style: BorderStyle.NIL } },
       rows: [
         new TableRow({
           children: [
             new TableCell({
               borders: { top: { style: BorderStyle.NIL }, bottom: { style: BorderStyle.NIL }, left: { style: BorderStyle.NIL }, right: { style: BorderStyle.SINGLE, size: 12, color: '0B3A42' } },
-              width: { size: 15, type: WidthType.PERCENTAGE },
+              width: { size: 2000, type: WidthType.DXA },
               margins: { top: 200, right: 200 },
               children: [
                 new Paragraph({
@@ -309,7 +314,8 @@ async function generateDocx(meeting, userName, isAtlascoreStyle) {
   }
 
   const headerTable = new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
+    width: { size: 9000, type: WidthType.DXA },
+    columnWidths: [9000],
     borders: { top: { style: BorderStyle.NIL }, bottom: { style: BorderStyle.NIL }, left: { style: BorderStyle.NIL }, right: { style: BorderStyle.NIL } },
     rows: headerRows
   });
