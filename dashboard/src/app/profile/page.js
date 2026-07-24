@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { User, Lock, Upload, Save, CheckCircle, AlertTriangle, Camera } from 'lucide-react';
+import { User, Lock, Upload, Save, CheckCircle, AlertTriangle, Camera, X } from 'lucide-react';
 import Link from 'next/link';
+import Cropper from 'react-easy-crop';
+import getCroppedImg from '../../utils/cropImage';
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -17,6 +19,13 @@ export default function ProfilePage() {
   
   const [profilePic, setProfilePic] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  
+  // Cropper states
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [imageSrc, setImageSrc] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -32,8 +41,30 @@ export default function ProfilePage() {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setProfilePic(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageSrc(reader.result);
+        setCropModalOpen(true);
+      };
+      reader.readAsDataURL(file);
+      // Reset input value to allow selecting the same file again
+      e.target.value = '';
+    }
+  };
+
+  const onCropComplete = (croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const handleCropSave = async () => {
+    try {
+      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels, 0);
+      setProfilePic(croppedImage.file);
+      setPreviewUrl(croppedImage.url);
+      setCropModalOpen(false);
+    } catch (e) {
+      console.error(e);
+      alert('Error al procesar la imagen');
     }
   };
 
@@ -204,6 +235,54 @@ export default function ProfilePage() {
           {loading ? 'Guardando...' : <><Save size={18} /> Guardar Cambios</>}
         </button>
       </form>
+
+      {cropModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '500px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0 }}>Ajustar Foto</h3>
+              <button onClick={() => setCropModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ position: 'relative', width: '100%', height: '300px', background: '#333', borderRadius: '8px', overflow: 'hidden' }}>
+              <Cropper
+                image={imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+            
+            <div style={{ marginTop: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Zoom</label>
+              <input
+                type="range"
+                value={zoom}
+                min={1}
+                max={3}
+                step={0.1}
+                aria-labelledby="Zoom"
+                onChange={(e) => {
+                  setZoom(e.target.value)
+                }}
+                style={{ width: '100%', accentColor: 'var(--accent-color)' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+              <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setCropModalOpen(false)}>Cancelar</button>
+              <button type="button" className="btn btn-primary" style={{ flex: 1 }} onClick={handleCropSave}>Aplicar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
