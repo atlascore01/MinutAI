@@ -13,7 +13,7 @@ export const metadata = {
     description: 'Generador Automático de Minutas Corporativas',
     images: [
       {
-        url: '/atlascore_firma.png',
+        url: '/favicon.png',
         width: 400,
         height: 400,
         alt: 'MinutAI',
