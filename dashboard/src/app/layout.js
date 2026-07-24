@@ -6,6 +6,20 @@ export const metadata = {
   description: 'Generador Automático de Minutas Corporativas',
   icons: {
     icon: '/favicon.png',
+    apple: '/favicon.png',
+  },
+  openGraph: {
+    title: 'MinutAI',
+    description: 'Generador Automático de Minutas Corporativas',
+    images: [
+      {
+        url: '/atlascore_firma.png',
+        width: 400,
+        height: 400,
+        alt: 'MinutAI',
+      },
+    ],
+    type: 'website',
   },
 };
 
