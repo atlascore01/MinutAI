@@ -8,9 +8,7 @@ const db = require('./db');
 const { processMeetingContent } = require('./ai');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
-const { put, del } = require('@vercel/blob');
-const { startDiscordBot } = require('./discord_bot');
-const { generateDocx } = require('./docxGenerator');
+const { BlobServiceClient } = require('@azure/storage-blob');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -246,18 +244,31 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
       
       content = fileText + (content ? '\n\n--- INGRESO MANUAL ADICIONAL ---\n\n' + content : '');
 
-      // Upload to Vercel Blob
+      // Upload to Azure Blob Storage
       try {
-        const blobOptions = {
-          access: 'public',
-          token: process.env.BLOB_READ_WRITE_TOKEN
-        };
+        const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+        if (!connectionString) {
+          throw new Error('AZURE_STORAGE_CONNECTION_STRING no está configurada');
+        }
+        const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+        const containerName = 'minutas';
+        const containerClient = blobServiceClient.getContainerClient(containerName);
+        
+        // Crear el contenedor si no existe (con acceso público de lectura a los blobs)
+        await containerClient.createIfNotExists({ access: 'blob' });
+
         const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const blobResult = await put(`minutas/${Date.now()}_${safeName}`, req.file.buffer, blobOptions);
-        fileUrl = blobResult.url;
+        const blobName = `${Date.now()}_${safeName}`;
+        const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+        await blockBlobClient.uploadData(req.file.buffer, {
+          blobHTTPHeaders: { blobContentType: req.file.mimetype }
+        });
+        
+        fileUrl = blockBlobClient.url;
       } catch (blobErr) {
-        console.error('Error uploading to Vercel Blob:', blobErr);
-        return res.status(500).json({ error: 'Error subiendo el archivo a Vercel Blob: ' + (blobErr.message || 'Error desconocido') });
+        console.error('Error uploading to Azure Blob:', blobErr);
+        return res.status(500).json({ error: 'Error subiendo el archivo a Azure Blob: ' + (blobErr.message || 'Error desconocido') });
       }
     }
 
@@ -326,8 +337,26 @@ app.get('/api/minutes', authMiddleware, async (req, res) => {
     try {
       const oldMeetings = await db.query(`SELECT file_url FROM meetings WHERE created_at < NOW() - INTERVAL '48 hours' AND file_url IS NOT NULL`);
       if (oldMeetings.rows.length > 0) {
-        const urls = oldMeetings.rows.map(r => r.file_url);
-        await del(urls, { token: process.env.BLOB_READ_WRITE_TOKEN });
+        const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+        if (connectionString) {
+          const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+          const containerClient = blobServiceClient.getContainerClient('minutas');
+          
+          for (const r of oldMeetings.rows) {
+            try {
+              // Extract blob name from URL (assuming format: https://<account>.blob.core.windows.net/minutas/<blobName>)
+              const urlParts = new URL(r.file_url);
+              const pathParts = urlParts.pathname.split('/');
+              const blobName = pathParts[pathParts.length - 1]; // get the last part
+              if (blobName) {
+                const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+                await blockBlobClient.deleteIfExists();
+              }
+            } catch (err) {
+              console.error('Error deleting blob:', r.file_url, err);
+            }
+          }
+        }
       }
       await db.query(`DELETE FROM meetings WHERE created_at < NOW() - INTERVAL '48 hours'`);
     } catch (cleanupErr) {
@@ -396,7 +425,78 @@ app.put('/api/minutes/:id', async (req, res) => {
   }
 });
 
+// ── Endpoint exclusivo para el Bot de Discord ─────────────────────
+// Autentica con el mismo DISCORD_TOKEN como clave compartida.
+// El bot envía la transcripción completa; el servidor genera la minuta
+// en estilo Atlascore y la guarda en la base de datos.
+app.post('/api/discord/process', async (req, res) => {
+  try {
+    const secret = req.headers['x-discord-secret'];
+    if (!secret || secret !== process.env.DISCORD_TOKEN) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+
+    const { transcript, participants } = req.body;
+    if (!transcript || !transcript.trim()) {
+      return res.status(400).json({ error: 'Transcripción vacía' });
+    }
+
+    const style = 'Estilo Atlascore (Formato Corporativo IT)';
+    const aiResult = await processMeetingContent(transcript, style);
+
+    const insertMeeting = `
+      INSERT INTO meetings (title, email_subject, date, participants, area, business_unit, client, objective, summary, topics, agreements, decisions, risks, custom_notes, raw_text, style)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      RETURNING id;
+    `;
+    const meetingValues = [
+      aiResult.title || 'Reunión de Discord',
+      aiResult.email_subject || '',
+      aiResult.date || new Date().toISOString().split('T')[0],
+      participants || aiResult.participants || 'Participantes de Discord',
+      aiResult.area || 'IT',
+      aiResult.business_unit || null,
+      aiResult.client || null,
+      aiResult.objective || null,
+      aiResult.summary || '',
+      JSON.stringify(aiResult.topics || []),
+      JSON.stringify(aiResult.agreements || []),
+      JSON.stringify(aiResult.decisions || []),
+      JSON.stringify(aiResult.risks || []),
+      aiResult.custom_notes || null,
+      transcript,
+      style
+    ];
+
+    const { rows } = await db.query(insertMeeting, meetingValues);
+    const meetingId = rows[0].id;
+
+    if (aiResult.action_items && aiResult.action_items.length > 0) {
+      for (const item of aiResult.action_items) {
+        await db.query(
+          'INSERT INTO action_items (meeting_id, action, owner, due_date, priority) VALUES ($1, $2, $3, $4, $5)',
+          [meetingId, item.action || 'Acción sin definir', item.owner || 'No asignado', item.due_date || 'Sin fecha', item.priority || 'Normal']
+        );
+      }
+    }
+
+    res.json({
+      id: meetingId,
+      title: aiResult.title,
+      date: aiResult.date,
+      participants: aiResult.participants,
+      summary: aiResult.summary,
+      action_items: aiResult.action_items || []
+    });
+
+  } catch (error) {
+    console.error('Error en /api/discord/process:', error);
+    res.status(500).json({ error: 'Error procesando la reunión: ' + error.message });
+  }
+});
+
 const keepAlive = () => {
+
   const url = process.env.RENDER_EXTERNAL_URL;
   if (!url) {
     console.log('No RENDER_EXTERNAL_URL environment variable found. Self-ping keep-alive skipped.');
@@ -415,6 +515,4 @@ const keepAlive = () => {
 
 app.listen(port, () => {
   console.log(`Agent API running on port ${port}`);
-  startDiscordBot();
-  keepAlive();
 });
