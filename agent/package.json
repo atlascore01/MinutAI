@@ -13,6 +13,7 @@
   "dependencies": {
     "@discordjs/voice": "^0.17.0",
     "@google/generative-ai": "^0.24.1",
+    "@azure/storage-blob": "^12.17.0",
     "@vercel/blob": "^2.4.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
