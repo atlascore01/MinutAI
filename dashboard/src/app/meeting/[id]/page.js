@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Calendar, Users, Briefcase, MapPin, Copy, Mail, AlertTriangle, CheckCircle, Target, BookOpen, Download, FileText, File } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { HEADER_LOGO_BASE64, SIGNATURE_LOGO_BASE64 } from '../../../utils/logos';
 
 export default function MeetingPage() {
   const { id } = useParams();
@@ -73,9 +74,13 @@ export default function MeetingPage() {
 
   const getGenericStyleHTML = (isPdf = false) => {
     const headerHTML = `
-      <div style="background: #ffffff; padding: 12px 24px; display: flex; align-items: center; border-bottom: 2px solid #ccc; margin-bottom: 20px;">
-        <h2 style="margin: 0; color: #333; font-family: Arial, sans-serif;">Minuta de Reunión</h2>
-      </div>
+      <table width="100%" border="0" cellspacing="0" cellpadding="12" style="margin-bottom: 20px;">
+        <tr bgcolor="#ffffff">
+          <td style="border-bottom: 2px solid #ccc;">
+            <h2 style="margin: 0; color: #333; font-family: Arial, sans-serif;">Minuta de Reunión</h2>
+          </td>
+        </tr>
+      </table>
     `;
 
     const footerHTML = (pageNum) => `
@@ -85,29 +90,34 @@ export default function MeetingPage() {
     `;
 
     const sectionHeaderHTML = (title) => `
-      <div style="background-color: #f0f0f0; border-left: 4px solid #666; padding: 8px 12px; margin-top: 15px; margin-bottom: 12px;">
-        <h3 style="color: #333; margin: 0; font-size: 15px; font-weight: bold; font-family: Arial, sans-serif; text-transform: uppercase;">${title}</h3>
-      </div>
+      <br/>
+      <table width="100%" border="0" cellspacing="0" cellpadding="8" style="margin-bottom: 12px;">
+        <tr bgcolor="#f0f0f0">
+          <td style="border-left: 4px solid #666;">
+            <h3 style="color: #333; margin: 0; font-size: 15px; font-weight: bold; font-family: Arial, sans-serif; text-transform: uppercase;">${title}</h3>
+          </td>
+        </tr>
+      </table>
     `;
 
     const infoTableHTML = `
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: Arial, sans-serif; font-size: 14px;">
         <tr style="border-bottom: 1px solid #ccc;">
-          <td style="background-color: #f9f9f9; color: #333; font-weight: bold; padding: 10px; width: 25%; border: 1px solid #ddd;">Fecha</td>
+          <td bgcolor="#f9f9f9" style="color: #333; font-weight: bold; padding: 10px; width: 25%; border: 1px solid #ddd;">Fecha</td>
           <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${meeting.date}</td>
         </tr>
         <tr style="border-bottom: 1px solid #ccc;">
-          <td style="background-color: #f9f9f9; color: #333; font-weight: bold; padding: 10px; border: 1px solid #ddd;">Participantes</td>
+          <td bgcolor="#f9f9f9" style="color: #333; font-weight: bold; padding: 10px; border: 1px solid #ddd;">Participantes</td>
           <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${meeting.participants || 'No especificados'}</td>
         </tr>
         <tr style="border-bottom: 1px solid #ccc;">
-          <td style="background-color: #f9f9f9; color: #333; font-weight: bold; padding: 10px; border: 1px solid #ddd;">Área / Rol</td>
+          <td bgcolor="#f9f9f9" style="color: #333; font-weight: bold; padding: 10px; border: 1px solid #ddd;">Área / Rol</td>
           <td style="padding: 10px; border: 1px solid #ddd; color: #333;">
             ${meeting.area || 'General'} ${meeting.business_unit ? ` | ${meeting.business_unit}` : ''}
           </td>
         </tr>
         <tr>
-          <td style="background-color: #f9f9f9; color: #333; font-weight: bold; padding: 10px; border: 1px solid #ddd;">Cliente</td>
+          <td bgcolor="#f9f9f9" style="color: #333; font-weight: bold; padding: 10px; border: 1px solid #ddd;">Cliente</td>
           <td style="padding: 10px; border: 1px solid #ddd; color: #333;">${meeting.client || 'No especificado'}</td>
         </tr>
       </table>
@@ -116,7 +126,7 @@ export default function MeetingPage() {
     const actionItemsTableHTML = `
       <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-family: Arial, sans-serif; font-size: 13px;">
         <thead>
-          <tr style="background-color: #f0f0f0; color: #333; text-align: left;">
+          <tr bgcolor="#f0f0f0" style="color: #333; text-align: left;">
             <th style="padding: 10px; border: 1px solid #ddd; width: 65%;">Acciones</th>
             <th style="padding: 10px; border: 1px solid #ddd; width: 20%;">Responsable</th>
             <th style="padding: 10px; border: 1px solid #ddd; width: 15%;">Prioridad</th>
@@ -219,15 +229,14 @@ export default function MeetingPage() {
 
   const getItStyleHTML = (name, isPdf = false) => {
     const areaColor = '#0b3a42'; // Dark teal used in the design
-    const accentColor = '#207268'; // Teal used for headers
-    const headerBg = 'linear-gradient(90deg, #093c42 0%, #0d555d 70%, #68b89e 100%)';
-    const headerLogoUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/logo%20full%20white.png`;
-    const signatureLogoUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/atlascore_firma.png`;
-
     const headerHTML = `
-      <div style="background: ${headerBg}; padding: 12px 24px; display: flex; align-items: center; border-bottom: 3px solid #207268; margin-bottom: 20px; border-radius: 4px 4px 0 0;">
-        <img src="${headerLogoUrl}" alt="Atlascore Logo" width="160" height="32" style="display: block;" crossorigin="anonymous" />
-      </div>
+      <table width="100%" border="0" cellspacing="0" cellpadding="12" style="margin-bottom: 20px;">
+        <tr bgcolor="#0b3a42">
+          <td style="border-bottom: 3px solid #207268;">
+            <img src="${HEADER_LOGO_BASE64}" alt="Atlascore Logo" width="160" height="32" style="display: block;" />
+          </td>
+        </tr>
+      </table>
     `;
 
     const footerHTML = (pageNum) => `
@@ -237,30 +246,35 @@ export default function MeetingPage() {
     `;
 
     const sectionHeaderHTML = (title) => `
-      <div style="background-color: #e9f7f5; border: 1px solid #a3dacf; border-radius: 4px; padding: 8px 12px; margin-top: 15px; margin-bottom: 12px;">
-        <h3 style="color: #1d6d63; margin: 0; font-size: 15px; font-weight: bold; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">${title}</h3>
-      </div>
+      <br/>
+      <table width="100%" border="0" cellspacing="0" cellpadding="8" style="margin-bottom: 12px;">
+        <tr bgcolor="#e9f7f5">
+          <td style="border: 1px solid #a3dacf;">
+            <h3 style="color: #1d6d63; margin: 0; font-size: 15px; font-weight: bold; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">${title}</h3>
+          </td>
+        </tr>
+      </table>
     `;
 
     // 1. Metadata Info Table
     const infoTableHTML = `
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: Arial, sans-serif; font-size: 14px;">
         <tr style="border-bottom: 1px solid #ccc;">
-          <td style="background-color: #0b3a42; color: white; font-weight: bold; padding: 10px; width: 25%; border: 1px solid #ccc;">Fecha</td>
+          <td bgcolor="#0b3a42" style="color: white; font-weight: bold; padding: 10px; width: 25%; border: 1px solid #ccc;">Fecha</td>
           <td style="padding: 10px; border: 1px solid #ccc; background-color: #ffffff; color: #333;">${meeting.date}</td>
         </tr>
         <tr style="border-bottom: 1px solid #ccc;">
-          <td style="background-color: #0b3a42; color: white; font-weight: bold; padding: 10px; border: 1px solid #ccc;">Participantes</td>
+          <td bgcolor="#0b3a42" style="color: white; font-weight: bold; padding: 10px; border: 1px solid #ccc;">Participantes</td>
           <td style="padding: 10px; border: 1px solid #ccc; background-color: #ffffff; color: #333;">${meeting.participants || 'No especificados'}</td>
         </tr>
         <tr style="border-bottom: 1px solid #ccc;">
-          <td style="background-color: #0b3a42; color: white; font-weight: bold; padding: 10px; border: 1px solid #ccc;">Área</td>
+          <td bgcolor="#0b3a42" style="color: white; font-weight: bold; padding: 10px; border: 1px solid #ccc;">Área</td>
           <td style="padding: 10px; border: 1px solid #ccc; background-color: #ffffff; color: #333;">
             ${meeting.area || 'IT'} ${meeting.business_unit ? ` | ${meeting.business_unit}` : ''}
           </td>
         </tr>
         <tr>
-          <td style="background-color: #0b3a42; color: white; font-weight: bold; padding: 10px; border: 1px solid #ccc;">Cliente</td>
+          <td bgcolor="#0b3a42" style="color: white; font-weight: bold; padding: 10px; border: 1px solid #ccc;">Cliente</td>
           <td style="padding: 10px; border: 1px solid #ccc; background-color: #ffffff; color: #333;">${meeting.client || 'No especificado'}</td>
         </tr>
       </table>
@@ -270,7 +284,7 @@ export default function MeetingPage() {
     const actionItemsTableHTML = `
       <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-family: Arial, sans-serif; font-size: 13px;">
         <thead>
-          <tr style="background-color: #0b3a42; color: white; text-align: left;">
+          <tr bgcolor="#0b3a42" style="color: white; text-align: left;">
             <th style="padding: 10px; border: 1px solid #ccc; width: 65%;">Acciones</th>
             <th style="padding: 10px; border: 1px solid #ccc; width: 20%;">Responsable</th>
             <th style="padding: 10px; border: 1px solid #ccc; width: 15%;">Prioridad</th>
@@ -278,7 +292,7 @@ export default function MeetingPage() {
         </thead>
         <tbody>
           ${meeting.action_items && meeting.action_items.length > 0 ? meeting.action_items.map((a, i) => `
-            <tr style="background-color: ${i % 2 === 0 ? '#ffffff' : '#f9f9f9'};">
+            <tr bgcolor="${i % 2 === 0 ? '#ffffff' : '#f9f9f9'}">
               <td style="padding: 10px; border: 1px solid #ccc; color: #333;">${a.action}</td>
               <td style="padding: 10px; border: 1px solid #ccc; color: #333; font-weight: 500;">${a.owner || 'No asignado'}</td>
               <td style="padding: 10px; border: 1px solid #ccc; color: #333; font-weight: 500;">${a.priority || 'Media'}</td>
@@ -293,20 +307,25 @@ export default function MeetingPage() {
     `;
 
     const signatureBlockHTML = `
-      <div style="margin: 25px auto 0 auto; padding-top: 15px; display: flex; align-items: center; justify-content: center; gap: 20px; font-family: Arial, sans-serif; max-width: 600px;">
-        <div style="display: flex; align-items: center; justify-content: center; width: 140px;">
-          <img src="${signatureLogoUrl}" alt="Atlascore Logo" width="110" height="110" style="display: block;" crossorigin="anonymous" />
-        </div>
-        <div style="border-left: 2px solid #0b3a42; height: 95px; margin: 0 10px;"></div>
-        <div style="font-size: 12px; color: #333; line-height: 1.5; text-align: left;">
-          <p style="margin: 0; font-weight: bold; font-size: 13px; color: #0b3a42; text-transform: uppercase;">ATLASCORE IT SERVICES S.A.S.</p>
-          <p style="margin: 2px 0;">CUIT: 30-71905817-1</p>
-          <p style="margin: 2px 0;">Matrícula: 44300-A</p>
-          <p style="margin: 2px 0;">Domicilio legal: Córdoba, Argentina</p>
-          <p style="margin: 2px 0;">contacto@atlascore.com.ar</p>
-          <p style="margin: 2px 0; font-weight: bold;"><a href="https://www.atlascore.com.ar" style="color: #207268; text-decoration: none;">www.atlascore.com.ar</a></p>
-        </div>
-      </div>
+      <br/>
+      <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 25px; max-width: 600px;">
+        <tr>
+          <td width="140" align="center" valign="middle">
+            <img src="${SIGNATURE_LOGO_BASE64}" alt="Atlascore Logo" width="110" height="110" style="display: block;" />
+          </td>
+          <td width="20" align="center" valign="middle">
+            <div style="border-left: 2px solid #0b3a42; height: 95px;"></div>
+          </td>
+          <td valign="middle" style="font-size: 12px; color: #333; line-height: 1.5; text-align: left;">
+            <p style="margin: 0; font-weight: bold; font-size: 13px; color: #0b3a42; text-transform: uppercase;">ATLASCORE IT SERVICES S.A.S.</p>
+            <p style="margin: 2px 0;">CUIT: 30-71905817-1</p>
+            <p style="margin: 2px 0;">Matrícula: 44300-A</p>
+            <p style="margin: 2px 0;">Domicilio legal: Córdoba, Argentina</p>
+            <p style="margin: 2px 0;">contacto@atlascore.com.ar</p>
+            <p style="margin: 2px 0; font-weight: bold;"><a href="https://www.atlascore.com.ar" style="color: #207268; text-decoration: none;">www.atlascore.com.ar</a></p>
+          </td>
+        </tr>
+      </table>
     `;
 
     if (isPdf) {
@@ -394,24 +413,33 @@ export default function MeetingPage() {
             <strong>Nota:</strong> Por favor siéntanse libres de agregar / modificar cualquier punto en pos de estar 100% sincronizados.
           </div>
 
-          <div style="background-color: #0b3a42; color: white; padding: 8px 12px; margin-bottom: 10px; font-weight: bold; border-radius: 4px;">
-            Participantes
-          </div>
+          <br/>
+          <table width="100%" border="0" cellspacing="0" cellpadding="8" style="margin-bottom: 10px;">
+            <tr bgcolor="#0b3a42">
+              <td><b style="color: white;">Participantes</b></td>
+            </tr>
+          </table>
           <ul style="padding-left: 20px; margin-bottom: 20px;">
             ${meeting.client && meeting.client !== 'No especificado en la reunión.' ? `<li><strong>${meeting.client}</strong> [CLIENTE]</li>` : ''}
             ${meeting.participants ? meeting.participants.split(',').map(p => `<li>${p.trim()}</li>`).join('') : ''}
           </ul>
 
-          <div style="background-color: #0b3a42; color: white; padding: 8px 12px; margin: 20px 0 10px 0; font-weight: bold; border-radius: 4px;">
-            Temas tratados
-          </div>
+          <br/>
+          <table width="100%" border="0" cellspacing="0" cellpadding="8" style="margin-bottom: 10px;">
+            <tr bgcolor="#0b3a42">
+              <td><b style="color: white;">Temas tratados</b></td>
+            </tr>
+          </table>
           <ul style="padding-left: 20px; margin-bottom: 20px;">
             ${meeting.topics ? meeting.topics.map(t => `<li style="margin-bottom: 8px;">${t}</li>`).join('') : '<li>No hay temas específicos.</li>'}
           </ul>
 
-          <div style="background-color: #0b3a42; color: white; padding: 8px 12px; margin: 20px 0 10px 0; font-weight: bold; border-radius: 4px;">
-            Próximos accionables
-          </div>
+          <br/>
+          <table width="100%" border="0" cellspacing="0" cellpadding="8" style="margin-bottom: 10px;">
+            <tr bgcolor="#0b3a42">
+              <td><b style="color: white;">Próximos accionables</b></td>
+            </tr>
+          </table>
           <ul style="list-style-type: none; padding-left: 0; margin-bottom: 20px;">
             ${meeting.action_items && meeting.action_items.length > 0 ? meeting.action_items.map(a => `
               <li style="margin-bottom: 15px; border-left: 3px solid #207268; padding-left: 10px;">
@@ -425,23 +453,32 @@ export default function MeetingPage() {
           </ul>
 
           ${meeting.custom_notes ? `
-          <div style="background-color: #0b3a42; color: white; padding: 8px 12px; margin: 20px 0 10px 0; font-weight: bold; border-radius: 4px;">
-            Notas y Comentarios Extra
-          </div>
+          <br/>
+          <table width="100%" border="0" cellspacing="0" cellpadding="8" style="margin-bottom: 10px;">
+            <tr bgcolor="#0b3a42">
+              <td><b style="color: white;">Notas y Comentarios Extra</b></td>
+            </tr>
+          </table>
           <p style="white-space: pre-wrap;">${meeting.custom_notes}</p>
           ` : ''}
 
           <p style="margin-top: 30px;">Desde ya quedamos atentos y agradecidos del feedback que nos puedan dar al respecto. Ante cualquier consulta o comentario, estamos a disposición.</p>
 
-          <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px; display: flex; align-items: center; justify-content: center; gap: 20px;">
-            <div>
-              <img src="${signatureLogoUrl}" alt="Atlascore Logo" width="50" height="50" style="display: block;" crossorigin="anonymous" />
-            </div>
-            <div style="border-left: 2px solid #0b3a42; padding-left: 20px; text-align: left;">
-              <p style="margin: 0; font-weight: bold; font-size: 14px; color: #0b3a42;">${name}</p>
-              <p style="margin: 2px 0; font-size: 12px; color: #666;">| Atlascore | <a href="https://www.atlascore.com.ar" style="color: #207268; text-decoration: none;">www.atlascore.com.ar</a></p>
-            </div>
-          </div>
+          <br/>
+          <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px;">
+            <tr>
+              <td width="60" align="center" valign="middle">
+                <img src="${SIGNATURE_LOGO_BASE64}" alt="Atlascore Logo" width="50" height="50" style="display: block;" />
+              </td>
+              <td width="20" align="center" valign="middle">
+                <div style="border-left: 2px solid #0b3a42; height: 40px;"></div>
+              </td>
+              <td valign="middle">
+                <p style="margin: 0; font-weight: bold; font-size: 14px; color: #0b3a42;">${name}</p>
+                <p style="margin: 2px 0; font-size: 12px; color: #666;">| Atlascore | <a href="https://www.atlascore.com.ar" style="color: #207268; text-decoration: none;">www.atlascore.com.ar</a></p>
+              </td>
+            </tr>
+          </table>
         </div>
       `;
     }
