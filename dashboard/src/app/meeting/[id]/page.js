@@ -67,13 +67,8 @@ export default function MeetingPage() {
   const handleAction = (type) => {
     if (type === 'copy') {
       executeCopy();
-      return;
-    }
-    if (user?.area === 'IT' || meeting?.style?.startsWith('Estilo Algeiba') || meeting?.style?.startsWith('Estilo Atlascore')) {
-      setActionType(type);
-      setShowNameModal(true);
-    } else {
-      if (type === 'pdf') executePdf();
+    } else if (type === 'pdf') {
+      executePdf();
     }
   };
 
@@ -222,6 +217,11 @@ export default function MeetingPage() {
                 <ul style="padding-left: 20px; margin-bottom: 20px;">
                   ${meeting.risks.map(r => `<li style="margin-bottom: 6px; color: #333;">${r}</li>`).join('')}
                 </ul>
+              ` : ''}
+              
+              ${meeting.custom_notes ? `
+                ${sectionHeaderHTML('Notas y Comentarios Extra')}
+                <p style="text-align: justify; margin-bottom: 20px; font-size: 14px; color: #333; line-height: 1.6; white-space: pre-wrap;">${meeting.custom_notes}</p>
               ` : ''}
               
               <div style="text-align: center; margin-top: 20px; margin-bottom: 15px;">
