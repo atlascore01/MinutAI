@@ -21,7 +21,12 @@ export default function MeetingPage() {
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    fetch(`${apiUrl}/api/minutes/${id}`)
+    const token = localStorage.getItem('minutai_token');
+    fetch(`${apiUrl}/api/minutes/${id}`, {
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    })
       .then(res => res.json())
       .then(data => {
         setMeeting(data);
