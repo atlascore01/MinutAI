@@ -499,6 +499,6 @@ const keepAlive = () => {
 
 app.listen(port, () => {
   console.log(`Agent API running on port ${port}`);
-  startDiscordBot();
+  // startDiscordBot(); // Disabled on Render to avoid duplicate bots with the local one
   keepAlive();
 });
