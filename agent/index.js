@@ -334,7 +334,15 @@ app.get('/api/minutes', authMiddleware, async (req, res) => {
       console.error('Error during 48h cleanup:', cleanupErr);
     }
 
-    const { rows } = await db.query('SELECT * FROM meetings WHERE user_id = $1 OR user_id IS NULL ORDER BY created_at DESC', [req.user.id]);
+    let query = 'SELECT * FROM meetings WHERE user_id = $1 OR user_id IS NULL ORDER BY created_at DESC';
+    let params = [req.user.id];
+    
+    if (req.user.role === 'ADMIN') {
+      query = 'SELECT * FROM meetings ORDER BY created_at DESC';
+      params = [];
+    }
+
+    const { rows } = await db.query(query, params);
     res.json(rows);
   } catch (error) {
     console.error(error);
@@ -412,12 +420,21 @@ app.post('/api/discord/process', async (req, res) => {
     const todayStr = new Date().toLocaleDateString('es-AR');
     const aiResult = await processMeetingContent(`Hoy es ${todayStr}. Transcripción:\n${transcript}`, style);
 
+    let targetUserId = null;
+    if (req.body.target_user) {
+      const userRes = await db.query('SELECT id FROM users WHERE username = $1', [req.body.target_user]);
+      if (userRes.rows.length > 0) {
+        targetUserId = userRes.rows[0].id;
+      }
+    }
+
     const insertMeeting = `
-      INSERT INTO meetings (title, email_subject, date, participants, area, business_unit, client, objective, summary, topics, agreements, decisions, risks, custom_notes, raw_text, style)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      INSERT INTO meetings (user_id, title, email_subject, date, participants, area, business_unit, client, objective, summary, topics, agreements, decisions, risks, custom_notes, raw_text, style)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING id;
     `;
     const meetingValues = [
+      targetUserId,
       aiResult.title || 'Reunión de Discord',
       aiResult.email_subject || '',
       aiResult.date || new Date().toISOString().split('T')[0],
