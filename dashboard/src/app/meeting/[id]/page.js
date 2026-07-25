@@ -819,6 +819,7 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
 
         </div>
       ) : (
+      <>
       <div className="card" style={{ padding: '3rem', marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', marginBottom: '1.5rem', background: 'none', WebkitTextFillColor: 'initial', color: 'white' }}>
           {meeting.title}
@@ -965,6 +966,8 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
             </table>
           </div>
         </div>
+      )}
+      </>
       )}
       </div>
       
