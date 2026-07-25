@@ -409,7 +409,8 @@ app.post('/api/discord/process', async (req, res) => {
     }
 
     const style = 'Estilo Atlascore (Formato Corporativo IT)';
-    const aiResult = await processMeetingContent(transcript, style);
+    const todayStr = new Date().toLocaleDateString('es-AR');
+    const aiResult = await processMeetingContent(`Hoy es ${todayStr}. Transcripción:\n${transcript}`, style);
 
     const insertMeeting = `
       INSERT INTO meetings (title, email_subject, date, participants, area, business_unit, client, objective, summary, topics, agreements, decisions, risks, custom_notes, raw_text, style)
