@@ -175,6 +175,11 @@ p {
   border-color: var(--accent-color);
 }
 
+select option {
+  background-color: var(--bg-color);
+  color: white;
+}
+
 .textarea {
   min-height: 120px;
   resize: vertical;
@@ -305,6 +310,7 @@ tr:hover td {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 /* Mobile Responsiveness */
