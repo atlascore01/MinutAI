@@ -334,7 +334,7 @@ app.get('/api/minutes', authMiddleware, async (req, res) => {
       console.error('Error during 48h cleanup:', cleanupErr);
     }
 
-    const { rows } = await db.query('SELECT * FROM meetings WHERE user_id = $1 ORDER BY created_at DESC', [req.user.id]);
+    const { rows } = await db.query('SELECT * FROM meetings WHERE user_id = $1 OR user_id IS NULL ORDER BY created_at DESC', [req.user.id]);
     res.json(rows);
   } catch (error) {
     console.error(error);
