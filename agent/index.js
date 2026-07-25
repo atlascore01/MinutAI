@@ -8,7 +8,9 @@ const db = require('./db');
 const { processMeetingContent } = require('./ai');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
-const { BlobServiceClient } = require('@azure/storage-blob');
+const { put, del } = require('@vercel/blob');
+const { startDiscordBot } = require('./discord_bot');
+const { generateDocx } = require('./docxGenerator');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -244,31 +246,18 @@ app.post('/api/process', upload.single('file'), async (req, res) => {
       
       content = fileText + (content ? '\n\n--- INGRESO MANUAL ADICIONAL ---\n\n' + content : '');
 
-      // Upload to Azure Blob Storage
+      // Upload to Vercel Blob
       try {
-        const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-        if (!connectionString) {
-          throw new Error('AZURE_STORAGE_CONNECTION_STRING no está configurada');
-        }
-        const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
-        const containerName = 'minutas';
-        const containerClient = blobServiceClient.getContainerClient(containerName);
-        
-        // Crear el contenedor si no existe (con acceso público de lectura a los blobs)
-        await containerClient.createIfNotExists({ access: 'blob' });
-
+        const blobOptions = {
+          access: 'public',
+          token: process.env.BLOB_READ_WRITE_TOKEN
+        };
         const safeName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const blobName = `${Date.now()}_${safeName}`;
-        const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-
-        await blockBlobClient.uploadData(req.file.buffer, {
-          blobHTTPHeaders: { blobContentType: req.file.mimetype }
-        });
-        
-        fileUrl = blockBlobClient.url;
+        const blobResult = await put(`minutas/${Date.now()}_${safeName}`, req.file.buffer, blobOptions);
+        fileUrl = blobResult.url;
       } catch (blobErr) {
-        console.error('Error uploading to Azure Blob:', blobErr);
-        return res.status(500).json({ error: 'Error subiendo el archivo a Azure Blob: ' + (blobErr.message || 'Error desconocido') });
+        console.error('Error uploading to Vercel Blob:', blobErr);
+        return res.status(500).json({ error: 'Error subiendo el archivo a Vercel Blob: ' + (blobErr.message || 'Error desconocido') });
       }
     }
 
@@ -337,26 +326,8 @@ app.get('/api/minutes', authMiddleware, async (req, res) => {
     try {
       const oldMeetings = await db.query(`SELECT file_url FROM meetings WHERE created_at < NOW() - INTERVAL '48 hours' AND file_url IS NOT NULL`);
       if (oldMeetings.rows.length > 0) {
-        const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-        if (connectionString) {
-          const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
-          const containerClient = blobServiceClient.getContainerClient('minutas');
-          
-          for (const r of oldMeetings.rows) {
-            try {
-              // Extract blob name from URL (assuming format: https://<account>.blob.core.windows.net/minutas/<blobName>)
-              const urlParts = new URL(r.file_url);
-              const pathParts = urlParts.pathname.split('/');
-              const blobName = pathParts[pathParts.length - 1]; // get the last part
-              if (blobName) {
-                const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-                await blockBlobClient.deleteIfExists();
-              }
-            } catch (err) {
-              console.error('Error deleting blob:', r.file_url, err);
-            }
-          }
-        }
+        const urls = oldMeetings.rows.map(r => r.file_url);
+        await del(urls, { token: process.env.BLOB_READ_WRITE_TOKEN });
       }
       await db.query(`DELETE FROM meetings WHERE created_at < NOW() - INTERVAL '48 hours'`);
     } catch (cleanupErr) {
@@ -425,10 +396,6 @@ app.put('/api/minutes/:id', async (req, res) => {
   }
 });
 
-// ── Endpoint exclusivo para el Bot de Discord ─────────────────────
-// Autentica con el mismo DISCORD_TOKEN como clave compartida.
-// El bot envía la transcripción completa; el servidor genera la minuta
-// en estilo Atlascore y la guarda en la base de datos.
 app.post('/api/discord/process', async (req, res) => {
   try {
     const secret = req.headers['x-discord-secret'];
@@ -496,7 +463,6 @@ app.post('/api/discord/process', async (req, res) => {
 });
 
 const keepAlive = () => {
-
   const url = process.env.RENDER_EXTERNAL_URL;
   if (!url) {
     console.log('No RENDER_EXTERNAL_URL environment variable found. Self-ping keep-alive skipped.');
@@ -515,4 +481,6 @@ const keepAlive = () => {
 
 app.listen(port, () => {
   console.log(`Agent API running on port ${port}`);
+  startDiscordBot();
+  keepAlive();
 });
