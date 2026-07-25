@@ -395,8 +395,32 @@ app.delete('/api/minutes/:id', authMiddleware, async (req, res) => {
 app.put('/api/minutes/:id', async (req, res) => {
   try {
     const meetingId = req.params.id;
-    const { summary, style } = req.body;
-    await db.query('UPDATE meetings SET summary = $1, style = $2 WHERE id = $3', [summary, style, meetingId]);
+    const {
+      title, date, participants, client, summary,
+      topics, decisions, risks, custom_notes, style, action_items
+    } = req.body;
+
+    await db.query(`
+      UPDATE meetings SET 
+        title = $1, date = $2, participants = $3, client = $4, summary = $5,
+        topics = $6, decisions = $7, risks = $8, custom_notes = $9, style = $10
+      WHERE id = $11
+    `, [
+      title, date, participants, client, summary,
+      JSON.stringify(topics || []), JSON.stringify(decisions || []), JSON.stringify(risks || []), custom_notes, style,
+      meetingId
+    ]);
+
+    if (action_items && Array.isArray(action_items)) {
+      await db.query('DELETE FROM action_items WHERE meeting_id = $1', [meetingId]);
+      for (const item of action_items) {
+        await db.query(
+          'INSERT INTO action_items (meeting_id, action, owner, due_date, priority) VALUES ($1, $2, $3, $4, $5)',
+          [meetingId, item.action || 'Acción sin definir', item.owner || 'No asignado', item.due_date || 'Sin fecha', item.priority || 'Normal']
+        );
+      }
+    }
+
     res.json({ success: true });
   } catch (error) {
     console.error(error);
@@ -438,7 +462,7 @@ app.post('/api/discord/process', async (req, res) => {
       aiResult.title || 'Reunión de Discord',
       aiResult.email_subject || '',
       aiResult.date || new Date().toISOString().split('T')[0],
-      participants || aiResult.participants || 'Participantes de Discord',
+      aiResult.participants || participants || 'Participantes de Discord',
       aiResult.area || 'IT',
       aiResult.business_unit || null,
       aiResult.client || null,

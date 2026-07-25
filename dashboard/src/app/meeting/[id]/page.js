@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { Calendar, Users, Briefcase, MapPin, Copy, Mail, AlertTriangle, CheckCircle, Target, BookOpen, Download, FileText, File } from 'lucide-react';
+import { Calendar, Users, Briefcase, MapPin, Copy, Mail, AlertTriangle, CheckCircle, Target, BookOpen, Download, FileText, File, Edit2, Save, X } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { HEADER_LOGO_BASE64, SIGNATURE_LOGO_BASE64 } from '../../../utils/logos';
 
@@ -14,6 +14,10 @@ export default function MeetingPage() {
   const { user } = useAuth();
   
   const [showResourcesModal, setShowResourcesModal] = useState(false);
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   
   const contentRef = useRef(null);
 
@@ -35,6 +39,52 @@ export default function MeetingPage() {
         setLoading(false);
       });
   }, [id]);
+
+  const handleEdit = () => {
+    setEditForm({ ...meeting });
+    setIsEditing(true);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const token = localStorage.getItem('minutai_token');
+      const res = await fetch(`${apiUrl}/api/minutes/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(editForm)
+      });
+      if (res.ok) {
+        setMeeting(editForm);
+        setIsEditing(false);
+      } else {
+        alert('Error al guardar los cambios');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de red al guardar los cambios');
+    }
+    setIsSaving(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditForm(null);
+    setIsEditing(false);
+  };
+
+  const handleArrayChange = (field, text) => {
+    setEditForm({ ...editForm, [field]: text.split('\n').filter(t => t.trim() !== '') });
+  };
+
+  const handleActionItemChange = (index, field, value) => {
+    const newItems = [...(editForm.action_items || [])];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setEditForm({ ...editForm, action_items: newItems });
+  };
 
   const getAreaColor = (area) => {
     switch (area) {
@@ -619,19 +669,35 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
           </span>
         </div>
         <div className="header-buttons">
-          <button onClick={() => setShowResourcesModal(true)} className="btn btn-secondary" style={{ backgroundColor: 'transparent', border: '1px solid ' + areaColor, color: areaColor }}>
-            <FileText size={18} /> Recursos
-          </button>
-          <button onClick={() => handleAction('copy')} className="btn btn-secondary">
-            {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
-            {copied ? '¡Copiado!' : 'Copiar para Correo'}
-          </button>
-          <button onClick={() => handleAction('pdf')} className="btn btn-primary" style={{ backgroundColor: areaColor, color: getTextColor(meeting.area) }}>
-            <FileText size={18} /> PDF
-          </button>
-          <button onClick={() => handleAction('docx')} className="btn btn-primary" style={{ backgroundColor: areaColor, color: getTextColor(meeting.area) }}>
-            <File size={18} /> DOCX
-          </button>
+          {!isEditing ? (
+            <>
+              <button onClick={handleEdit} className="btn btn-secondary" style={{ backgroundColor: 'transparent', border: '1px solid #eab308', color: '#eab308' }}>
+                <Edit2 size={18} /> Editar Minuta
+              </button>
+              <button onClick={() => setShowResourcesModal(true)} className="btn btn-secondary" style={{ backgroundColor: 'transparent', border: '1px solid ' + areaColor, color: areaColor }}>
+                <FileText size={18} /> Recursos
+              </button>
+              <button onClick={() => handleAction('copy')} className="btn btn-secondary">
+                {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
+                {copied ? '¡Copiado!' : 'Copiar para Correo'}
+              </button>
+              <button onClick={() => handleAction('pdf')} className="btn btn-primary" style={{ backgroundColor: areaColor, color: getTextColor(meeting.area) }}>
+                <FileText size={18} /> PDF
+              </button>
+              <button onClick={() => handleAction('docx')} className="btn btn-primary" style={{ backgroundColor: areaColor, color: getTextColor(meeting.area) }}>
+                <File size={18} /> DOCX
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={handleCancelEdit} className="btn btn-secondary" style={{ backgroundColor: 'transparent', border: '1px solid #ef4444', color: '#ef4444' }}>
+                <X size={18} /> Cancelar
+              </button>
+              <button onClick={handleSave} disabled={isSaving} className="btn btn-primary" style={{ backgroundColor: '#22c55e', color: 'white' }}>
+                <Save size={18} /> {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -676,6 +742,83 @@ ${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp
 
       {/* Main Card */}
       <div ref={contentRef}>
+      {isEditing ? (
+        <div className="card" style={{ padding: '3rem', marginBottom: '2rem' }}>
+          <h2 style={{ marginBottom: '1.5rem', color: areaColor }}>Editar Minuta</h2>
+          
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>Título</label>
+            <input type="text" className="input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={editForm.title || ''} onChange={(e) => setEditForm({...editForm, title: e.target.value})} />
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>Asunto Sugerido (Email)</label>
+            <input type="text" className="input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={editForm.email_subject || ''} onChange={(e) => setEditForm({...editForm, email_subject: e.target.value})} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>Fecha</label>
+              <input type="text" className="input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={editForm.date || ''} onChange={(e) => setEditForm({...editForm, date: e.target.value})} />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>Participantes</label>
+              <input type="text" className="input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={editForm.participants || ''} onChange={(e) => setEditForm({...editForm, participants: e.target.value})} />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>Cliente</label>
+              <input type="text" className="input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={editForm.client || ''} onChange={(e) => setEditForm({...editForm, client: e.target.value})} />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>Resumen Ejecutivo</label>
+            <textarea rows="4" className="input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={editForm.summary || ''} onChange={(e) => setEditForm({...editForm, summary: e.target.value})} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>Temas Tratados (1 por línea)</label>
+              <textarea rows="6" className="input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={(editForm.topics || []).join('\n')} onChange={(e) => handleArrayChange('topics', e.target.value)} />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>Decisiones (1 por línea)</label>
+              <textarea rows="6" className="input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={(editForm.decisions || []).join('\n')} onChange={(e) => handleArrayChange('decisions', e.target.value)} />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>Riesgos y Bloqueos (1 por línea)</label>
+            <textarea rows="4" className="input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={(editForm.risks || []).join('\n')} onChange={(e) => handleArrayChange('risks', e.target.value)} />
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white' }}>Notas y Comentarios Extra</label>
+            <textarea rows="4" className="input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={editForm.custom_notes || ''} onChange={(e) => setEditForm({...editForm, custom_notes: e.target.value})} />
+          </div>
+
+          <h3 style={{ marginBottom: '1rem', color: 'white' }}>Próximos Pasos (Acciones)</h3>
+          {editForm.action_items && editForm.action_items.map((item, index) => (
+            <div key={index} style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
+              <input type="text" placeholder="Acción" className="input" style={{ flex: 2, padding: '0.5rem', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={item.action || ''} onChange={(e) => handleActionItemChange(index, 'action', e.target.value)} />
+              <input type="text" placeholder="Responsable" className="input" style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={item.owner || ''} onChange={(e) => handleActionItemChange(index, 'owner', e.target.value)} />
+              <input type="text" placeholder="Fecha" className="input" style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={item.due_date || ''} onChange={(e) => handleActionItemChange(index, 'due_date', e.target.value)} />
+              <select className="input" style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} value={item.priority || 'Normal'} onChange={(e) => handleActionItemChange(index, 'priority', e.target.value)}>
+                <option value="Baja">Baja</option>
+                <option value="Normal">Normal</option>
+                <option value="Media">Media</option>
+                <option value="Alta">Alta</option>
+              </select>
+              <button onClick={() => {
+                const newItems = editForm.action_items.filter((_, i) => i !== index);
+                setEditForm({ ...editForm, action_items: newItems });
+              }} style={{ background: '#ef4444', border: 'none', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>X</button>
+            </div>
+          ))}
+          <button onClick={() => setEditForm({...editForm, action_items: [...(editForm.action_items || []), { action: '', owner: '', due_date: '', priority: 'Normal' }]})} style={{ background: 'transparent', border: `1px solid ${areaColor}`, color: areaColor, padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer', marginTop: '0.5rem' }}>+ Agregar Acción</button>
+
+        </div>
+      ) : (
       <div className="card" style={{ padding: '3rem', marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', marginBottom: '1.5rem', background: 'none', WebkitTextFillColor: 'initial', color: 'white' }}>
           {meeting.title}
