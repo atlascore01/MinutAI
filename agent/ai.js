@@ -65,11 +65,17 @@ ${content}
 
   const MAX_RETRIES = 3;
   let delay = 2000;
+  const fallbackModels = [
+    process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro'
+  ];
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
+      const modelName = fallbackModels[Math.min(attempt - 1, fallbackModels.length - 1)];
       const model = genAI.getGenerativeModel({ 
-        model: 'gemini-3.5-flash',
+        model: modelName,
         systemInstruction: SYSTEM_PROMPT,
       });
 

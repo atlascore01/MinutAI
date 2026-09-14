@@ -9,7 +9,7 @@ const Groq = require('groq-sdk');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const AGENT_API_URL = process.env.AGENT_API_URL || 'https://minutai-7g66.onrender.com';
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN ? process.env.DISCORD_TOKEN.trim() : '';
 const PORT = 3030;
 
 const client = new Client({
@@ -76,8 +76,35 @@ app.get('/', (req, res) => {
 
       <script>
         let mediaRecorder;
-        let audioChunks = [];
+        let currentChunks = [];
+        let completedBlobs = [];
+        let chunkTimer = null;
         let streamsToStop = [];
+        let destStream = null;
+
+        function startSegment() {
+          currentChunks = [];
+          let mimeType = 'audio/webm';
+          if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+            mimeType = 'audio/webm;codecs=opus';
+          }
+          mediaRecorder = new MediaRecorder(destStream, { mimeType });
+          
+          mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) currentChunks.push(e.data);
+          };
+          
+          mediaRecorder.onstop = () => {
+            if (currentChunks.length > 0) {
+              const blob = new Blob(currentChunks, { type: mimeType });
+              if (blob.size > 1000) {
+                completedBlobs.push(blob);
+              }
+            }
+          };
+
+          mediaRecorder.start(1000);
+        }
 
         document.getElementById('startBtn').addEventListener('click', async () => {
           try {
@@ -101,50 +128,27 @@ app.get('/', (req, res) => {
               return;
             }
 
-            // Mix them
-            const ctx = new AudioContext();
+            // Mix them, con sampleRate a 16000Hz para Whisper y reducir tamaño
+            const ctx = new AudioContext({ sampleRate: 16000 });
             const dest = ctx.createMediaStreamDestination();
             
             ctx.createMediaStreamSource(micStream).connect(dest);
             ctx.createMediaStreamSource(sysStream).connect(dest);
             
             streamsToStop = [micStream, sysStream];
+            destStream = dest.stream;
+            completedBlobs = [];
 
-            mediaRecorder = new MediaRecorder(dest.stream, { mimeType: 'audio/webm' });
-            
-            mediaRecorder.ondataavailable = e => {
-              if (e.data.size > 0) audioChunks.push(e.data);
-            };
-            
-            mediaRecorder.onstop = async () => {
-              document.getElementById('statusText').innerText = '⏳ Procesando y subiendo el audio... no cierres la página.';
-              document.getElementById('stopBtn').disabled = true;
-              
-              const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-              const formData = new FormData();
-              formData.append('audio', audioBlob, 'reunion.webm');
-              
-              const urlParams = new URLSearchParams(window.location.search);
-              const targetUser = urlParams.get('targetUser');
-              if (targetUser) formData.append('targetUser', targetUser);
-              
-              try {
-                const res = await fetch('/upload', { method: 'POST', body: formData });
-                const result = await res.json();
-                if(result.success) {
-                  document.getElementById('statusText').innerText = '✅ ¡Listo! Minuta generada en Discord. Ya podés cerrar esta pestaña.';
-                  document.getElementById('statusText').style.color = '#a6e3a1';
-                } else {
-                  document.getElementById('statusText').innerText = '❌ Error de la IA: ' + result.error;
-                  document.getElementById('statusText').style.color = '#f38ba8';
-                }
-              } catch (err) {
-                document.getElementById('statusText').innerText = '❌ Error de conexión al servidor.';
+            // Iniciar primer segmento
+            startSegment();
+
+            // Rotar segmento cada 5 minutos (300.000 ms) para evitar limite de 25MB en Groq
+            chunkTimer = setInterval(() => {
+              if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                startSegment();
               }
-              audioChunks = [];
-            };
-
-            mediaRecorder.start(1000);
+            }, 5 * 60 * 1000);
             
             document.getElementById('startBtn').classList.add('hidden');
             document.getElementById('inst').classList.add('hidden');
@@ -170,10 +174,45 @@ app.get('/', (req, res) => {
           }
         });
 
-        document.getElementById('stopBtn').addEventListener('click', () => {
-          document.getElementById('stopBtn').innerText = '⏳ Deteniendo...';
-          mediaRecorder.stop();
+        document.getElementById('stopBtn').addEventListener('click', async () => {
+          document.getElementById('stopBtn').innerText = '⏳ Deteniendo y procesando...';
+          document.getElementById('stopBtn').disabled = true;
+
+          if (chunkTimer) clearInterval(chunkTimer);
+
+          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+          }
           streamsToStop.forEach(s => s.getTracks().forEach(t => t.stop()));
+
+          // Esperar 400ms para asegurar que onstop guarde el ultimo segmento
+          await new Promise(r => setTimeout(r, 400));
+
+          document.getElementById('statusText').innerText = '⏳ Subiendo ' + completedBlobs.length + ' fragmento(s) de audio... no cierres la página.';
+
+          const formData = new FormData();
+          completedBlobs.forEach((blob, i) => {
+            formData.append('audio', blob, 'part_' + (i + 1) + '.webm');
+          });
+          
+          const urlParams = new URLSearchParams(window.location.search);
+          const targetUser = urlParams.get('targetUser');
+          if (targetUser) formData.append('targetUser', targetUser);
+          
+          try {
+            const res = await fetch('/upload', { method: 'POST', body: formData });
+            const result = await res.json();
+            if(result.success) {
+              document.getElementById('statusText').innerText = '✅ ¡Listo! Minuta generada en Discord. Ya podés cerrar esta pestaña.';
+              document.getElementById('statusText').style.color = '#a6e3a1';
+            } else {
+              document.getElementById('statusText').innerText = '❌ Error de la IA: ' + result.error;
+              document.getElementById('statusText').style.color = '#f38ba8';
+            }
+          } catch (err) {
+            document.getElementById('statusText').innerText = '❌ Error de conexión al servidor.';
+          }
+          completedBlobs = [];
         });
       </script>
     </body>
@@ -188,23 +227,60 @@ app.post('/notify-start', (req, res) => {
   res.json({ok: true});
 });
 
-app.post('/upload', upload.single('audio'), async (req, res) => {
-  if (!req.file) return res.status(400).json({error: 'No se recibió audio'});
+app.post('/upload', upload.array('audio'), async (req, res) => {
+  const files = req.files || (req.file ? [req.file] : []);
+  if (files.length === 0) return res.status(400).json({error: 'No se recibió ningún audio'});
   
+  const targetUser = req.body.targetUser || null;
+  const now = new Date();
+  const dateFormatted = now.toISOString().replace(/T/, '_').replace(/:/g, '-').slice(0, 16);
+  const userLabel = (targetUser || currentRecorder || 'reunion').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const folderPath = path.join(os.homedir(), 'MinutAI-Bot', 'transcripciones');
+
+  if (!fs.existsSync(folderPath)) {
+    fs.mkdirSync(folderPath, { recursive: true });
+  }
+
+  const transcriptFileName = `transcripcion_${userLabel}_${dateFormatted}.txt`;
+  const transcriptFilePath = path.join(folderPath, transcriptFileName);
+  
+  fs.writeFileSync(transcriptFilePath, `====================================================\n  TRANSCIPCIÓN DE REUNIÓN - ${now.toLocaleString('es-AR')}\n  Usuario/Grabador: ${userLabel}\n====================================================\n\n`, 'utf8');
+
   if (currentDiscordChannel) {
-    currentDiscordChannel.send('⏳ **Audio recibido en el bot. Transcribiendo y procesando con IA...**\n*Esto puede tardar hasta 1 minuto.*');
+    currentDiscordChannel.send(`⏳ **Audio recibido (${files.length} fragmento${files.length > 1 ? 's' : ''}). Transcribiendo y procesando con IA...**\n*Guardando copia local en:* \`transcripciones/${transcriptFileName}\``);
   }
 
   try {
-    const transcript = await transcribeAudio(req.file.path);
+    let fullTranscript = '';
+    for (let i = 0; i < files.length; i++) {
+      if (files.length > 1 && currentDiscordChannel) {
+        currentDiscordChannel.send(`⏳ Transcribiendo fragmento ${i + 1} de ${files.length}...`);
+      }
+      try {
+        const partTranscript = await transcribeAudio(files[i].path);
+        if (partTranscript && partTranscript.trim()) {
+          fullTranscript += (fullTranscript ? '\n\n' : '') + partTranscript.trim();
+          
+          // Guardar cada fragmento en el archivo local inmediatamente
+          const chunkHeader = files.length > 1 ? `--- Fragmento ${i + 1}/${files.length} ---\n` : '';
+          fs.appendFileSync(transcriptFilePath, chunkHeader + partTranscript.trim() + '\n\n', 'utf8');
+        }
+      } catch (partErr) {
+        console.error(`Error transcribiendo fragmento ${i + 1}:`, partErr.message);
+        if (currentDiscordChannel && files.length > 1) {
+          currentDiscordChannel.send(`⚠️ No se pudo transcribir el fragmento ${i + 1} (sin audio relevante o formato inaudible). Continuando...`);
+        }
+      }
+    }
 
-    if (!transcript.trim()) {
+    if (!fullTranscript.trim()) {
       if (currentDiscordChannel) currentDiscordChannel.send('❌ No se escuchó nada en el audio o duró muy poco.');
       return res.json({success: false, error: 'Audio vacío o inaudible'});
     }
 
-    const targetUser = req.body.targetUser || null;
-    const result = await sendToRenderAPI(`[Reunión]: "${transcript}"`, currentRecorder || 'DaNi', targetUser);
+    console.log(`💾 Transcripción guardada localmente en: ${transcriptFilePath}`);
+
+    const result = await sendToRenderAPI(`[Reunión]: "${fullTranscript}"`, currentRecorder || 'DaNi', targetUser);
 
     let msg = `✅ **¡Minuta generada y guardada en MinutAI!**\n\n`;
     msg += `📋 **${result.title}**\n`;
@@ -217,6 +293,7 @@ app.post('/upload', upload.single('audio'), async (req, res) => {
         msg += `${i + 1}. **${item.action}** → *${item.owner}* (${item.due_date})\n`;
       });
     }
+    msg += `\n💾 *Transcripción bruta guardada en:* \`MinutAI-Bot/transcripciones/${transcriptFileName}\`\n`;
     msg += `\n*Minuta completa disponible en el dashboard de MinutAI.*`;
     
     if (currentDiscordChannel) currentDiscordChannel.send(msg);
