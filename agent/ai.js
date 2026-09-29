@@ -63,17 +63,20 @@ CONTENIDO:
 ${content}
 `;
 
-  const MAX_RETRIES = 3;
   let delay = 2000;
   const fallbackModels = [
-    process.env.GEMINI_MODEL || 'gemini-3.5-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-pro'
-  ];
+    process.env.GEMINI_MODEL,
+    'gemini-1.5-pro-latest',
+    'gemini-1.5-flash-latest',
+    'gemini-2.0-flash',
+    'gemini-1.5-pro',
+    'gemini-1.5-flash'
+  ].filter(Boolean);
+  const MAX_RETRIES = fallbackModels.length;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const modelName = fallbackModels[Math.min(attempt - 1, fallbackModels.length - 1)];
+      const modelName = fallbackModels[attempt - 1];
       const model = genAI.getGenerativeModel({ 
         model: modelName,
         systemInstruction: SYSTEM_PROMPT,
