@@ -70,13 +70,16 @@ ${content}
     'gemini-1.5-flash-latest',
     'gemini-2.0-flash',
     'gemini-1.5-pro',
-    'gemini-1.5-flash'
+    'gemini-1.5-flash',
+    'gemini-1.0-pro',
+    'gemini-pro'
   ].filter(Boolean);
   const MAX_RETRIES = fallbackModels.length;
 
+  let errors = [];
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const modelName = fallbackModels[attempt - 1];
     try {
-      const modelName = fallbackModels[attempt - 1];
       const model = genAI.getGenerativeModel({ 
         model: modelName,
         systemInstruction: SYSTEM_PROMPT,
@@ -93,9 +96,10 @@ ${content}
       const responseText = result.response.text();
       return JSON.parse(responseText);
     } catch (error) {
-      console.error(`Error in Gemini LLM (Attempt ${attempt}/${MAX_RETRIES}):`, error.message);
+      console.error(`Error with model ${modelName} (Attempt ${attempt}/${MAX_RETRIES}):`, error.message);
+      errors.push(`${modelName}: ${error.message}`);
       if (attempt === MAX_RETRIES) {
-        throw new Error('Gemini LLM Error: ' + error.message);
+        throw new Error('Gemini LLM Models Failed. Details: ' + errors.join(' | '));
       }
       // Wait before retrying (exponential backoff)
       await new Promise(resolve => setTimeout(resolve, delay));
