@@ -63,7 +63,6 @@ CONTENIDO:
 ${content}
 `;
 
-  let delay = 2000;
   const fallbackModels = [
     process.env.GEMINI_MODEL,
     'gemini-3.8-flash',
@@ -76,31 +75,51 @@ ${content}
   let errors = [];
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     const modelName = fallbackModels[attempt - 1];
-    try {
-      const model = genAI.getGenerativeModel({ 
-        model: modelName,
-        systemInstruction: SYSTEM_PROMPT,
-      });
+    
+    // Attempt the same model up to 3 times if it fails with 503 or 429
+    let modelSuccess = false;
+    let modelRetries = 3;
+    let modelDelay = 2000;
+    
+    for (let r = 1; r <= modelRetries; r++) {
+      try {
+        const model = genAI.getGenerativeModel({ 
+          model: modelName,
+          systemInstruction: SYSTEM_PROMPT,
+        });
 
-      const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.2
+        const result = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2
+          }
+        });
+
+        const responseText = result.response.text();
+        return JSON.parse(responseText);
+      } catch (error) {
+        console.error(`Error with model ${modelName} (Retry ${r}/${modelRetries}):`, error.message);
+        
+        // If it's a 404 (Not Found), there's no point in retrying this specific model, move to next fallback
+        if (error.message.includes('404')) {
+          errors.push(`${modelName}: ${error.message}`);
+          break;
         }
-      });
-
-      const responseText = result.response.text();
-      return JSON.parse(responseText);
-    } catch (error) {
-      console.error(`Error with model ${modelName} (Attempt ${attempt}/${MAX_RETRIES}):`, error.message);
-      errors.push(`${modelName}: ${error.message}`);
-      if (attempt === MAX_RETRIES) {
-        throw new Error('Gemini LLM Models Failed. Details: ' + errors.join(' | '));
+        
+        if (r === modelRetries) {
+          errors.push(`${modelName}: ${error.message}`);
+        } else {
+          // Wait before retrying the same model
+          await new Promise(resolve => setTimeout(resolve, modelDelay));
+          modelDelay *= 2; // 2s, 4s...
+        }
       }
-      // Wait before retrying (exponential backoff)
-      await new Promise(resolve => setTimeout(resolve, delay));
-      delay *= 2; // 2s, 4s, 8s...
+    }
+    
+    // If we've exhausted all fallback models, throw the combined error
+    if (attempt === MAX_RETRIES) {
+      throw new Error('Gemini LLM Models Failed. Details: ' + errors.join(' | '));
     }
   }
 }
