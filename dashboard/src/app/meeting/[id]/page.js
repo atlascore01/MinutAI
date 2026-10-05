@@ -202,7 +202,7 @@ export default function MeetingPage() {
       return `
         <div style="background-color: #ffffff; color: #333; font-family: Arial, sans-serif; line-height: 1.5; font-size: 14px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
           <style>li, p, div, ul, tr { page-break-inside: avoid; }</style>
-          <div style="page-break-after: always; padding: 15mm; box-sizing: border-box; height: 296mm; display: flex; flex-direction: column; justify-content: space-between;">
+          <div style="padding: 15mm; box-sizing: border-box; background-color: #ffffff;">
             <div>
               ${headerHTML}
               <div style="text-align: center; margin-bottom: 20px;">
@@ -227,11 +227,8 @@ export default function MeetingPage() {
                 </ul>
               ` : ''}
             </div>
-            ${footerHTML(1)}
-          </div>
-          <div style="padding: 15mm; box-sizing: border-box; height: 296mm; display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-              ${headerHTML}
+            
+            <div style="margin-top: 30px;">
               ${meeting.risks && meeting.risks.length > 0 ? `
                 ${sectionHeaderHTML('Riesgos')}
                 <ul style="padding-left: 20px; margin-bottom: 20px;">
@@ -245,7 +242,7 @@ export default function MeetingPage() {
               ${sectionHeaderHTML('Plan de Acción')}
               ${actionItemsTableHTML}
             </div>
-            ${footerHTML(2)}
+            ${footerHTML(1)}
           </div>
         </div>
       `;
@@ -399,8 +396,8 @@ export default function MeetingPage() {
             li, p, div, ul, tr { page-break-inside: avoid; }
           </style>
           
-          <!-- PAGE 1 -->
-          <div style="page-break-after: always; padding: 15mm; box-sizing: border-box; height: 296mm; display: flex; flex-direction: column; justify-content: space-between; background-color: #f4f6f8;">
+          <!-- CONTENT CONTAINER -->
+          <div style="padding: 15mm; box-sizing: border-box; background-color: #f4f6f8;">
             <div>
               ${headerHTML}
               
@@ -431,13 +428,7 @@ export default function MeetingPage() {
               ` : ''}
             </div>
             
-            ${footerHTML(1)}
-          </div>
-          
-          <!-- PAGE 2 -->
-          <div style="padding: 15mm; box-sizing: border-box; height: 296mm; display: flex; flex-direction: column; justify-content: space-between; background-color: #f4f6f8;">
-            <div>
-              ${headerHTML}
+            <div style="margin-top: 30px;">
               
               ${meeting.risks && meeting.risks.length > 0 ? `
                 ${sectionHeaderHTML('Riesgos y Bloqueos')}
@@ -460,7 +451,9 @@ export default function MeetingPage() {
               ${signatureBlockHTML}
             </div>
             
-            ${footerHTML(2)}
+            <div style="margin-top: 40px;">
+              ${footerHTML(1)}
+            </div>
           </div>
           
         </div>
