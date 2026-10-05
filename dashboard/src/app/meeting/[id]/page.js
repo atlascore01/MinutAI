@@ -201,7 +201,7 @@ export default function MeetingPage() {
     if (isPdf) {
       return `
         <div style="background-color: #ffffff; color: #333; font-family: Arial, sans-serif; line-height: 1.5; font-size: 14px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
-          <style>li, p, div, ul, tr { page-break-inside: avoid; }</style>
+          <style>li, p, ul, tr, h1, h2, h3 { page-break-inside: avoid; }</style>
           <div style="padding: 15mm; box-sizing: border-box; background-color: #ffffff;">
             <div>
               ${headerHTML}
@@ -239,10 +239,14 @@ export default function MeetingPage() {
                 ${sectionHeaderHTML('Notas y Comentarios Extra')}
                 <p style="text-align: justify; margin-bottom: 20px; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${meeting.custom_notes}</p>
               ` : ''}
+              
               ${sectionHeaderHTML('Plan de Acción')}
               ${actionItemsTableHTML}
             </div>
-            ${footerHTML(1)}
+            
+            <div style="margin-top: 30px; border-top: 1px solid #ccc; padding-top: 8px; text-align: right; font-size: 11px; color: #666;">
+              <span>Minuta de Reunión</span>
+            </div>
           </div>
         </div>
       `;
@@ -391,13 +395,13 @@ export default function MeetingPage() {
 
     if (isPdf) {
       return `
-        <div style="background-color: #f4f6f8; color: #333; font-family: Arial, sans-serif; line-height: 1.5; font-size: 14px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
+        <div style="background-color: #ffffff; color: #333; font-family: Arial, sans-serif; line-height: 1.5; font-size: 14px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
           <style>
-            li, p, div, ul, tr { page-break-inside: avoid; }
+            li, p, ul, tr, h1, h2, h3 { page-break-inside: avoid; }
           </style>
           
           <!-- CONTENT CONTAINER -->
-          <div style="padding: 15mm; box-sizing: border-box; background-color: #f4f6f8;">
+          <div style="padding: 15mm; box-sizing: border-box; background-color: #ffffff;">
             <div>
               ${headerHTML}
               
@@ -451,8 +455,8 @@ export default function MeetingPage() {
               ${signatureBlockHTML}
             </div>
             
-            <div style="margin-top: 40px;">
-              ${footerHTML(1)}
+            <div style="margin-top: 40px; border-top: 1px solid #ccc; padding-top: 8px; text-align: right; font-size: 11px; color: #666;">
+              <span>Atlascore - Minuta</span>
             </div>
           </div>
           
