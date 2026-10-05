@@ -265,6 +265,20 @@ export default function MeetingPage() {
             ${meeting.topics ? meeting.topics.map(t => `<li style="margin-bottom: 8px;">${t}</li>`).join('') : '<li>No hay temas específicos.</li>'}
           </ul>
           
+          ${meeting.decisions && meeting.decisions.length > 0 ? `
+          ${sectionHeaderHTML('Decisiones Tomadas')}
+          <ul style="padding-left: 20px; margin-bottom: 15px;">
+            ${meeting.decisions.map(d => `<li style="margin-bottom: 8px;">${d}</li>`).join('')}
+          </ul>
+          ` : ''}
+          
+          ${meeting.risks && meeting.risks.length > 0 ? `
+          ${sectionHeaderHTML('Riesgos y Bloqueos')}
+          <ul style="padding-left: 20px; margin-bottom: 15px;">
+            ${meeting.risks.map(r => `<li style="margin-bottom: 8px;">${r}</li>`).join('')}
+          </ul>
+          ` : ''}
+
           ${sectionHeaderHTML('Plan de Acción')}
           ${actionItemsTableHTML}
 
@@ -477,12 +491,46 @@ export default function MeetingPage() {
           <br/>
           <table width="100%" border="0" cellspacing="0" cellpadding="8" style="margin-bottom: 10px;">
             <tr bgcolor="#0b3a42">
+              <td><b style="color: white;">Resumen Ejecutivo</b></td>
+            </tr>
+          </table>
+          <p style="text-align: justify; margin-bottom: 20px; padding-left: 10px; color: #333;">
+            ${meeting.summary || 'No se especificó resumen.'}
+          </p>
+
+          <br/>
+          <table width="100%" border="0" cellspacing="0" cellpadding="8" style="margin-bottom: 10px;">
+            <tr bgcolor="#0b3a42">
               <td><b style="color: white;">Temas tratados</b></td>
             </tr>
           </table>
           <ul style="padding-left: 20px; margin-bottom: 20px;">
             ${meeting.topics ? meeting.topics.map(t => `<li style="margin-bottom: 8px;">${t}</li>`).join('') : '<li>No hay temas específicos.</li>'}
           </ul>
+
+          ${meeting.decisions && meeting.decisions.length > 0 ? `
+          <br/>
+          <table width="100%" border="0" cellspacing="0" cellpadding="8" style="margin-bottom: 10px;">
+            <tr bgcolor="#0b3a42">
+              <td><b style="color: white;">Decisiones Tomadas</b></td>
+            </tr>
+          </table>
+          <ul style="padding-left: 20px; margin-bottom: 20px;">
+            ${meeting.decisions.map(d => `<li style="margin-bottom: 8px;">${d}</li>`).join('')}
+          </ul>
+          ` : ''}
+
+          ${meeting.risks && meeting.risks.length > 0 ? `
+          <br/>
+          <table width="100%" border="0" cellspacing="0" cellpadding="8" style="margin-bottom: 10px;">
+            <tr bgcolor="#0b3a42">
+              <td><b style="color: white;">Riesgos y Bloqueos</b></td>
+            </tr>
+          </table>
+          <ul style="padding-left: 20px; margin-bottom: 20px;">
+            ${meeting.risks.map(r => `<li style="margin-bottom: 8px;">${r}</li>`).join('')}
+          </ul>
+          ` : ''}
 
           <br/>
           <table width="100%" border="0" cellspacing="0" cellpadding="8" style="margin-bottom: 10px;">
@@ -542,17 +590,23 @@ Estimados,
 
 Comparto la minuta correspondiente a la reunión realizada el día ${meeting.date}.
 
-**Resumen:**
+**Participantes:**
+${meeting.client && meeting.client !== 'No especificado en la reunión.' ? '- ' + meeting.client + ' [CLIENTE]\n' : ''}${meeting.participants ? meeting.participants.split(',').map(p => '- ' + p.trim()).join('\n') : ''}
+
+**Resumen Ejecutivo:**
 ${meeting.summary}
 
 **Temas Tratados:**
-${meeting.topics ? meeting.topics.map(t => '- ' + t).join('\n') : ''}
+${meeting.topics ? meeting.topics.map(t => '- ' + t).join('\n') : 'No hay temas específicos.'}
 
-**Decisiones:**
-${meeting.decisions ? meeting.decisions.map(d => '- ' + d).join('\n') : ''}
+**Decisiones Tomadas:**
+${meeting.decisions && meeting.decisions.length > 0 ? meeting.decisions.map(d => '- ' + d).join('\n') : 'No se registraron decisiones.'}
 
-**Próximos Pasos:**
-${meeting.action_items ? meeting.action_items.map(a => '- ' + a.action + ' (Resp: ' + a.owner + ', Fecha: ' + a.due_date + ')').join('\n') : ''}
+**Riesgos y Bloqueos:**
+${meeting.risks && meeting.risks.length > 0 ? meeting.risks.map(r => '- ' + r).join('\n') : 'No se registraron riesgos ni bloqueos.'}
+
+**Próximos Pasos (Acciones):**
+${meeting.action_items && meeting.action_items.length > 0 ? meeting.action_items.map(a => '- ' + a.action + ' (Resp: ' + a.owner + ', Fecha: ' + a.due_date + ')').join('\n') : 'No hay próximos pasos registrados.'}
 `;
     if (meeting.custom_notes) {
       baseText += `\n**Notas y Comentarios Extra:**\n${meeting.custom_notes}\n`;
