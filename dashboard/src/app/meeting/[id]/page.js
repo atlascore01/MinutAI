@@ -221,9 +221,9 @@ export default function MeetingPage() {
               ` : ''}
               
               ${meeting.decisions && meeting.decisions.length > 0 ? `
-                ${sectionHeaderHTML('Decisiones')}
+                ${sectionHeaderHTML('Decisiones Tomadas')}
                 <ul style="padding-left: 20px; margin-bottom: 15px;">
-                  ${meeting.decisions.map(d => `<li style="margin-bottom: 6px;">${d}</li>`).join('')}
+                  ${meeting.decisions.map(d => `<li style="margin-bottom: 6px; color: #333;">${typeof d === 'string' ? d : (d.decision || d.text || JSON.stringify(d))}</li>`).join('')}
                 </ul>
               ` : ''}
             </div>
@@ -268,14 +268,14 @@ export default function MeetingPage() {
           ${meeting.decisions && meeting.decisions.length > 0 ? `
           ${sectionHeaderHTML('Decisiones Tomadas')}
           <ul style="padding-left: 20px; margin-bottom: 15px;">
-            ${meeting.decisions.map(d => `<li style="margin-bottom: 8px;">${d}</li>`).join('')}
+            ${meeting.decisions.map(d => `<li style="margin-bottom: 8px; color: #333;">${typeof d === 'string' ? d : (d.decision || d.text || JSON.stringify(d))}</li>`).join('')}
           </ul>
           ` : ''}
           
           ${meeting.risks && meeting.risks.length > 0 ? `
           ${sectionHeaderHTML('Riesgos y Bloqueos')}
           <ul style="padding-left: 20px; margin-bottom: 15px;">
-            ${meeting.risks.map(r => `<li style="margin-bottom: 8px;">${r}</li>`).join('')}
+            ${meeting.risks.map(r => `<li style="margin-bottom: 8px; color: #333;">${typeof r === 'string' ? r : (r.risk || r.text || JSON.stringify(r))}</li>`).join('')}
           </ul>
           ` : ''}
 
@@ -424,9 +424,9 @@ export default function MeetingPage() {
               ` : ''}
               
               ${meeting.decisions && meeting.decisions.length > 0 ? `
-                ${sectionHeaderHTML('Decisiones')}
+                ${sectionHeaderHTML('Decisiones Tomadas')}
                 <ul style="padding-left: 20px; margin-bottom: 15px;">
-                  ${meeting.decisions.map(d => `<li style="margin-bottom: 6px; color: #333;">${d}</li>`).join('')}
+                  ${meeting.decisions.map(d => `<li style="margin-bottom: 6px; color: #333;">${typeof d === 'string' ? d : (d.decision || d.text || JSON.stringify(d))}</li>`).join('')}
                 </ul>
               ` : ''}
             </div>
@@ -440,9 +440,9 @@ export default function MeetingPage() {
               ${headerHTML}
               
               ${meeting.risks && meeting.risks.length > 0 ? `
-                ${sectionHeaderHTML('Riesgos')}
+                ${sectionHeaderHTML('Riesgos y Bloqueos')}
                 <ul style="padding-left: 20px; margin-bottom: 20px;">
-                  ${meeting.risks.map(r => `<li style="margin-bottom: 6px; color: #333;">${r}</li>`).join('')}
+                  ${meeting.risks.map(r => `<li style="margin-bottom: 6px; color: #333;">${typeof r === 'string' ? r : (r.risk || r.text || JSON.stringify(r))}</li>`).join('')}
                 </ul>
               ` : ''}
               
@@ -516,7 +516,7 @@ export default function MeetingPage() {
             </tr>
           </table>
           <ul style="padding-left: 20px; margin-bottom: 20px;">
-            ${meeting.decisions.map(d => `<li style="margin-bottom: 8px;">${d}</li>`).join('')}
+            ${meeting.decisions.map(d => `<li style="margin-bottom: 8px; color: #333;">${typeof d === 'string' ? d : (d.decision || d.text || JSON.stringify(d))}</li>`).join('')}
           </ul>
           ` : ''}
 
@@ -528,7 +528,7 @@ export default function MeetingPage() {
             </tr>
           </table>
           <ul style="padding-left: 20px; margin-bottom: 20px;">
-            ${meeting.risks.map(r => `<li style="margin-bottom: 8px;">${r}</li>`).join('')}
+            ${meeting.risks.map(r => `<li style="margin-bottom: 8px; color: #333;">${typeof r === 'string' ? r : (r.risk || r.text || JSON.stringify(r))}</li>`).join('')}
           </ul>
           ` : ''}
 
@@ -600,10 +600,10 @@ ${meeting.summary}
 ${meeting.topics ? meeting.topics.map(t => '- ' + t).join('\n') : 'No hay temas específicos.'}
 
 **Decisiones Tomadas:**
-${meeting.decisions && meeting.decisions.length > 0 ? meeting.decisions.map(d => '- ' + d).join('\n') : 'No se registraron decisiones.'}
+${meeting.decisions && meeting.decisions.length > 0 ? meeting.decisions.map(d => '- ' + (typeof d === 'string' ? d : (d.decision || d.text || JSON.stringify(d)))).join('\n') : 'No se registraron decisiones.'}
 
 **Riesgos y Bloqueos:**
-${meeting.risks && meeting.risks.length > 0 ? meeting.risks.map(r => '- ' + r).join('\n') : 'No se registraron riesgos ni bloqueos.'}
+${meeting.risks && meeting.risks.length > 0 ? meeting.risks.map(r => '- ' + (typeof r === 'string' ? r : (r.risk || r.text || JSON.stringify(r)))).join('\n') : 'No se registraron riesgos ni bloqueos.'}
 
 **Próximos Pasos (Acciones):**
 ${meeting.action_items && meeting.action_items.length > 0 ? meeting.action_items.map(a => '- ' + a.action + ' (Resp: ' + a.owner + ', Fecha: ' + a.due_date + ')').join('\n') : 'No hay próximos pasos registrados.'}

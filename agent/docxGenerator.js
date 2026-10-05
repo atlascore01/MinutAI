@@ -383,20 +383,22 @@ async function generateDocx(meeting, userName, isAtlascoreStyle) {
 
   // Decisions
   if (isAtlascoreStyle && meeting.decisions && meeting.decisions.length > 0) {
-    children.push(createSectionHeader('Decisiones', isAtlascoreStyle));
+    children.push(createSectionHeader('Decisiones Tomadas', isAtlascoreStyle));
     children.push(new Paragraph({ text: '' }));
     meeting.decisions.forEach(d => {
-      children.push(new Paragraph({ text: d, bullet: { level: 0 } }));
+      const textVal = typeof d === 'string' ? d : (d.decision || d.text || JSON.stringify(d));
+      children.push(new Paragraph({ text: textVal, bullet: { level: 0 } }));
     });
     children.push(new Paragraph({ text: '' }));
   }
 
   // Risks
   if (isAtlascoreStyle && meeting.risks && meeting.risks.length > 0) {
-    children.push(createSectionHeader('Riesgos', isAtlascoreStyle));
+    children.push(createSectionHeader('Riesgos y Bloqueos', isAtlascoreStyle));
     children.push(new Paragraph({ text: '' }));
     meeting.risks.forEach(r => {
-      children.push(new Paragraph({ text: r, bullet: { level: 0 } }));
+      const textVal = typeof r === 'string' ? r : (r.risk || r.text || JSON.stringify(r));
+      children.push(new Paragraph({ text: textVal, bullet: { level: 0 } }));
     });
     children.push(new Paragraph({ text: '' }));
   }
